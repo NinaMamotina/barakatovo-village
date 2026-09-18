@@ -1,0 +1,1081 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #23262d;
+  font-family: -apple-system, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+#wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+#stage {
+  position: relative;
+  width: min(100%, 100vh - 20px);
+  aspect-ratio: 1 / 1;
+  background: #1c1f26;
+  border-radius: 18px;
+  border: 3px solid #3a3f4a;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.55);
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+.screen.active { opacity: 1; pointer-events: auto; }
+
+.hidden { display: none !important; }
+
+/* ============ ROOM ============ */
+
+.full {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hit {
+  position: absolute;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.hitbox {
+  position: absolute;
+  pointer-events: none;
+}
+.hitbox img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+}
+
+/* window: all 3 states pre-composed onto the same 2000x2000 canvas box */
+#window-img-room, #window-img-closeup { z-index: 2; }
+
+/* zoom the whole close-up (image + its hit buttons) in together so they stay aligned */
+#window-zoom-wrap {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.65);
+  transform-origin: 50% 8%;
+}
+
+/* room view: click the shutters to enter the window close-up */
+#hit-shutters {
+  left: 38.98%;
+  top: 11.08%;
+  width: 28.09%;
+  height: 43.99%;
+  z-index: 5;
+}
+
+/* close-up view: click the shutters to open the window (closed -> open) */
+#hit-open-shutters {
+  left: 38.98%;
+  top: 11.08%;
+  width: 28.09%;
+  height: 43.99%;
+  z-index: 5;
+}
+
+/* proxy button on the mosque dome only (open -> mosque lit), armed once clock is correct */
+#hit-mosque {
+  left: 41.97%;
+  top: 32.2%;
+  width: 21.06%;
+  height: 19.97%;
+  z-index: 6;
+}
+
+/* clock icon in room view */
+.round-hit {
+  left: 6%;
+  top: 6%;
+  width: 16%;
+  aspect-ratio: 1/1;
+  z-index: 5;
+}
+.clock-icon-face {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35));
+}
+.clock-icon-hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: #3a2e2e;
+  border-radius: 2px;
+  transform-origin: 50% 100%;
+}
+.clock-icon-hand.hour {
+  width: 6%;
+  height: 22%;
+  margin-left: -3%;
+  margin-top: -22%;
+  transform: rotate(50deg);
+}
+.clock-icon-hand.minute {
+  width: 5%;
+  height: 30%;
+  margin-left: -2.5%;
+  margin-top: -30%;
+  transform: rotate(180deg);
+}
+
+/* small prayer-times plaque under the clock icon */
+#hit-schedule {
+  left: 6%;
+  top: 23.5%;
+  width: 16%;
+  height: 9%;
+  z-index: 5;
+}
+#schedule-icon {
+  width: 100%;
+  height: 100%;
+  background: #f4ead9;
+  border: 2px solid #a9793f;
+  border-radius: 6px;
+  box-shadow: 0 3px 7px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+#schedule-icon .pin {
+  position: absolute;
+  top: -6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: #c97b7b;
+  border: 1px solid #7a3f3f;
+}
+#schedule-icon .line {
+  font-size: 1.35vmin;
+  color: #3a2e2e;
+  font-family: Georgia, serif;
+  line-height: 1.25;
+  text-align: center;
+}
+
+/* Nor: fixed box to the right of the bed, never overlapping it.
+   Pose images are pre-cropped to one shared bbox so scale stays consistent;
+   mirrored so she faces left, toward the bed. */
+#nor-box {
+  left: 82%;
+  top: 39.6%;
+  width: 0;
+  height: 52%;
+  z-index: 3;
+  overflow: visible;
+}
+#nor-box img {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  transform: translateX(-50%) scaleX(-1);
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+}
+
+#bed-img { z-index: 1; }
+
+#hit-nor {
+  left: 75%;
+  top: 39.6%;
+  width: 20%;
+  height: 52%;
+  z-index: 7;
+}
+
+/* ============ hint / dialogue ============ */
+
+#hint {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20,20,25,0.82);
+  color: #f4ead9;
+  padding: 1.6% 4%;
+  border-radius: 20px;
+  font-size: 3.2vmin;
+  max-width: 80%;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .4s ease;
+  z-index: 10;
+}
+#hint.show { opacity: 1; }
+
+/* Bubble sits upper-left of Nor; its tail (bottom-left in the source art)
+   is mirrored to bottom-right so it points down at her head. */
+#dialogue {
+  position: absolute;
+  left: 38%;
+  top: 5%;
+  width: 44%;
+  pointer-events: none;
+  z-index: 8;
+}
+#dialogue-bubble {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#dialogue-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#dialogue-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-right: 3px solid #a9793f;
+  border-bottom: 3px solid #a9793f;
+  transform: rotate(45deg);
+  bottom: -3.5%;
+  right: 18%;
+}
+
+/* ============ CLOCK CLOSEUP ============ */
+
+#scene-window {
+  background: #4a6266;
+}
+
+#scene-clock {
+  background: #4a6266;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  direction: ltr;
+}
+
+.back-btn {
+  position: absolute;
+  top: 3.5%;
+  left: 3.5%;
+  width: 9%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #f4ead9;
+  font-size: 4vmin;
+  cursor: pointer;
+  z-index: 25;
+  direction: ltr;
+  unicode-bidi: bidi-override;
+}
+
+#clock-face-wrap {
+  position: relative;
+  width: 58%;
+  aspect-ratio: 1/1;
+  margin-bottom: 4%;
+}
+#clock-face-wrap .face {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+#hand-hour {
+  width: 20%;
+  height: 40%;
+  margin-left: -9.76%;
+  margin-top: -6.8%;
+  transform-origin: 48.8% 17%;
+}
+#hand-minute {
+  width: 20%;
+  height: 40%;
+  margin-left: -10%;
+  margin-top: -4.32%;
+  transform-origin: 50% 10.8%;
+}
+.hand img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+#time-readout {
+  color: #f4ead9;
+  font-size: 3.6vmin;
+  letter-spacing: 1px;
+  margin-bottom: 4%;
+  opacity: 0.85;
+}
+
+#clock-success {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5%;
+  background: rgba(12,14,18,0.92);
+  z-index: 20;
+  text-align: center;
+  padding: 8%;
+  opacity: 0;
+  animation: successIn .5s ease forwards;
+}
+#clock-success .badge {
+  font-size: 8vmin;
+  color: #f4d58d;
+  text-shadow: 0 0 18px rgba(244,213,141,0.8);
+  margin-bottom: 2%;
+}
+#clock-success h2 {
+  color: #f4ead9;
+  font-size: 4.4vmin;
+  margin: 0;
+}
+#clock-success p {
+  color: #cdbfae;
+  font-size: 3.2vmin;
+  margin: 0.5em 0 0;
+}
+@keyframes successIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+#scene-schedule {
+  background: radial-gradient(ellipse at center, #3a4250 0%, #1a1e26 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#schedule-card {
+  width: 72%;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 14px;
+  padding: 6% 8%;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  font-family: Georgia, serif;
+}
+#schedule-card h2 {
+  text-align: center;
+  color: #6b3f2a;
+  font-size: 3.6vmin;
+  margin: 0 0 6%;
+  border-bottom: 2px solid #cdb490;
+  padding-bottom: 4%;
+}
+.schedule-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 3vmin;
+  color: #3a2e2e;
+  padding: 2.5% 0;
+  border-bottom: 1px dashed #cdb490;
+}
+.schedule-row:last-of-type { border-bottom: none; }
+.pname { font-weight: 600; }
+.ptime { color: #a9793f; font-weight: 700; }
+.schedule-note {
+  text-align: center;
+  margin: 6% 0 0;
+  font-style: italic;
+  color: #8a7a63;
+  font-size: 2.2vmin;
+}
+
+.clock-controls {
+  display: flex;
+  gap: 10%;
+  align-items: center;
+  justify-content: center;
+}
+.control-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5%;
+}
+.control-group .label {
+  color: #cdbfae;
+  font-size: 2.4vmin;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.control-buttons { display: flex; gap: 4%; }
+.ctrl-btn {
+  width: 11vmin;
+  height: 11vmin;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.ctrl-btn img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ctrl-btn:active { transform: scale(0.92); }
+
+#lang-wrap {
+  position: absolute;
+  right: 2.5%;
+  bottom: 2.5%;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1.5vmin;
+  direction: ltr;
+}
+
+#lang-gear {
+  width: 7.5vmin;
+  height: 7.5vmin;
+  border-radius: 50%;
+  background: rgba(20,20,25,0.4);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(244,234,217,0.9);
+  font-size: 3.6vmin;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#lang-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vmin;
+}
+#lang-menu.hidden { display: none !important; }
+.lang-option {
+  background: rgba(20,20,25,0.75);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #f4ead9;
+  font-size: 2.2vmin;
+  padding: 1.2vmin 2.4vmin;
+  border-radius: 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  text-align: center;
+}
+.lang-option.current {
+  border-color: #f4d58d;
+  color: #f4d58d;
+}
+
+#lang-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vmin;
+}
+#lang-submenu.hidden { display: none !important; }
+.menu-action {
+  margin-top: 0.6vmin;
+  background: rgba(20,20,25,0.75);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #f4ead9;
+  font-size: 2vmin;
+  padding: 1.2vmin 2.4vmin;
+  border-radius: 10px;
+  white-space: nowrap;
+  text-align: center;
+  cursor: pointer;
+}
+.menu-action:hover {
+  border-color: #f4d58d;
+}
+
+#save-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(10,10,14,0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#save-prompt.hidden { display: none !important; }
+#reset-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(10,10,14,0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#reset-confirm.hidden { display: none !important; }
+.save-prompt-card {
+  background: #241f2e;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 16px;
+  padding: 4vmin 5vmin;
+  text-align: center;
+  max-width: 80vw;
+}
+.save-prompt-card h2 {
+  color: #f4d58d;
+  font-size: 2.8vmin;
+  margin: 0 0 1.2vmin;
+}
+.save-prompt-card p {
+  color: #f4ead9;
+  font-size: 2vmin;
+  margin: 0 0 2.4vmin;
+}
+.save-prompt-buttons {
+  display: flex;
+  gap: 1.6vmin;
+  justify-content: center;
+}
+.save-prompt-buttons .menu-action {
+  margin-top: 0;
+  font-size: 2.2vmin;
+  padding: 1.4vmin 3vmin;
+}
+#save-prompt-continue,
+#reset-confirm-yes {
+  border-color: #f4d58d !important;
+  color: #f4d58d !important;
+}
+
+/* ============ ROOM 2 / ВАННАЯ ============ */
+
+.side-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(244,234,217,0.75);
+  font-size: 2.6vmin;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.side-nav.right { right: 1.5%; }
+.side-nav.left { left: 1.5%; }
+
+#hit-door {
+  left: 58.25%;
+  top: 8.7%;
+  width: 30.1%;
+  height: 74.95%;
+  z-index: 5;
+}
+
+#nor-redress-img {
+  position: absolute;
+  left: 57%;
+  bottom: 8%;
+  height: 58%;
+  width: auto;
+  max-width: none;
+  transform: scaleX(-1);
+  z-index: 6;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+}
+
+#hit-wardrobe-drawer {
+  left: 7%;
+  top: 62.4%;
+  width: 45.5%;
+  height: 9.7%;
+  z-index: 5;
+}
+
+#hit-bath-door {
+  left: 59%;
+  top: 9.5%;
+  width: 28.75%;
+  height: 51.5%;
+  z-index: 5;
+}
+
+#hit-cards {
+  left: 0%;
+  top: 77.45%;
+  width: 24.7%;
+  height: 11.25%;
+  z-index: 5;
+}
+
+#scene-room2, #scene-bath, #scene-wardrobe {
+  background: #4a6266;
+}
+
+#bath-dialogue {
+  position: absolute;
+  left: 8%;
+  top: 5%;
+  width: 50%;
+  pointer-events: none;
+  z-index: 45;
+}
+#bath-dialogue-bubble {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#bath-dialogue-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#bath-dialogue-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-right: 3px solid #a9793f;
+  border-bottom: 3px solid #a9793f;
+  transform: rotate(45deg);
+  bottom: -3.5%;
+  right: 18%;
+}
+
+#cards-dialogue {
+  position: absolute;
+  left: 8%;
+  top: 3%;
+  width: 50%;
+  pointer-events: none;
+  z-index: 45;
+}
+#cards-dialogue-bubble {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#cards-dialogue-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#cards-dialogue-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-right: 3px solid #a9793f;
+  border-bottom: 3px solid #a9793f;
+  transform: rotate(45deg);
+  bottom: -3.5%;
+  right: 18%;
+}
+
+#room2-dialogue {
+  position: absolute;
+  left: 48%;
+  top: 12%;
+  width: 46%;
+  pointer-events: none;
+  z-index: 45;
+}
+#room2-dialogue-bubble {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#room2-dialogue-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#room2-dialogue-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-right: 3px solid #a9793f;
+  border-bottom: 3px solid #a9793f;
+  transform: translateX(-50%) rotate(45deg);
+  bottom: -3.5%;
+  left: 50%;
+}
+
+/* ---- wudu card puzzle ---- */
+
+#scene-cards {
+  background: linear-gradient(160deg, #8a6a4a 0%, #6b4a35 100%);
+}
+#board-frame {
+  position: absolute;
+  inset: 4%;
+  border: 6px solid #b98f5e;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #7c5c3f 0%, #5c3f2a 100%);
+  box-shadow: inset 0 0 34px rgba(0,0,0,0.4);
+}
+
+#card-slots, #card-arrows, #card-layer {
+  position: absolute;
+  inset: 0;
+}
+#card-slots, #card-arrows {
+  pointer-events: none;
+}
+
+.card-slot {
+  position: absolute;
+  border: 1.5px dashed rgba(255,255,255,0.55);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+}
+
+.card-arrow {
+  position: absolute;
+  color: rgba(255,255,255,0.6);
+  font-size: 3.2vmin;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  transform: translate(-50%, -50%);
+}
+
+#hit-card-pile {
+  left: 40%;
+  top: 41.75%;
+  width: 20%;
+  height: 16.5%;
+  z-index: 9;
+}
+
+.wudu-card {
+  position: absolute;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: left .6s cubic-bezier(.2,.7,.3,1), top .6s cubic-bezier(.2,.7,.3,1),
+              width .6s ease, height .6s ease, transform .3s ease, box-shadow .2s ease;
+  z-index: 7;
+}
+.wudu-card.selected {
+  box-shadow: 0 0 0 3px #f4d58d, 0 6px 16px rgba(0,0,0,0.5);
+  transform: scale(1.05);
+  z-index: 8;
+}
+
+#cards-locked-img {
+  position: absolute;
+  left: 12%;
+  top: 12%;
+  width: 76%;
+  height: 76%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
+}
+
+#cards-success {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5%;
+  background: rgba(12,14,18,0.92);
+  z-index: 30;
+  text-align: center;
+  padding: 8%;
+  opacity: 0;
+  animation: successIn .5s ease forwards;
+}
+#cards-success .badge {
+  font-size: 8vmin;
+  color: #f4d58d;
+  text-shadow: 0 0 18px rgba(244,213,141,0.8);
+  margin-bottom: 2%;
+}
+#cards-success h2 {
+  color: #f4ead9;
+  font-size: 3.6vmin;
+  margin: 0;
+}
+#cards-success .tap-hint {
+  color: #f4d58d;
+  font-size: 1.9vmin;
+  margin-top: 1.5em;
+  opacity: 0.85;
+  animation: tapHintPulse 1.6s ease-in-out infinite;
+}
+@keyframes tapHintPulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+#cards-success p {
+  color: #cdbfae;
+  font-size: 2.6vmin;
+  margin: 0.5em 0 0;
+}
+
+#card-reward {
+  position: absolute;
+  left: 50%;
+  top: -40%;
+  width: 34%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 0 4px #f4d58d;
+  transform: translateX(-50%);
+  z-index: 40;
+  cursor: pointer;
+}
+#card-reward.drop-in {
+  top: 33%;
+  transition: top .7s cubic-bezier(.34,1.4,.4,1);
+}
+#card-reward.flying-to-inventory {
+  position: fixed;
+  transform: none;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+  transition: left .55s cubic-bezier(.4,0,.2,1), top .55s cubic-bezier(.4,0,.2,1),
+              width .55s ease, height .55s ease, opacity .55s ease .2s;
+  z-index: 999;
+}
+
+/* ---- collectible items on the wall / in the wardrobe ---- */
+
+#bag-img, #hit-bag {
+  left: 15.5%;
+  top: 40.65%;
+  width: 11%;
+  height: 8.55%;
+  z-index: 4;
+}
+#boots-img, #hit-boots {
+  left: 89%;
+  top: 79.5%;
+  width: 10%;
+  height: 9.5%;
+  z-index: 4;
+}
+#bag-img, #boots-img {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  transition: opacity .35s ease;
+}
+#hit-bag, #hit-boots { z-index: 5; }
+
+#hijab-img, #hit-hijab {
+  left: 9.35%;
+  top: 39.3%;
+  width: 21.75%;
+  height: 27.95%;
+}
+#dress-img, #hit-dress {
+  left: 34.35%;
+  top: 41.9%;
+  width: 31.75%;
+  height: 25.7%;
+}
+#socks-img, #hit-socks {
+  left: 68.55%;
+  top: 42.05%;
+  width: 21.3%;
+  height: 44.35%;
+}
+#hijab-img, #dress-img, #socks-img {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  transition: opacity .35s ease;
+  z-index: 4;
+}
+#hit-hijab, #hit-dress, #hit-socks { z-index: 5; }
+
+/* ---- inventory (collapsible drawer, pulled up from the bottom edge) ---- */
+
+#inventory-wrap {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  bottom: 0;
+  transform: translateY(calc(100% - 5vmin));
+  transition: transform .3s ease;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  direction: ltr;
+}
+#inventory-wrap.open {
+  transform: translateY(0);
+}
+
+
+#inventory-toggle {
+  width: 9vmin;
+  height: 5vmin;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: rgba(20,20,25,0.35);
+  color: rgba(244,234,217,0.85);
+  font-size: 2.2vmin;
+  padding: 0;
+  cursor: pointer;
+  transition: transform .3s ease;
+}
+#inventory-wrap.open #inventory-toggle {
+  transform: rotate(180deg);
+}
+
+#inventory-bar {
+  display: flex;
+  gap: 1.1vmin;
+  padding: 1.3vmin 1.5vmin 1.7vmin;
+  background: rgba(20,20,25,0.3);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  width: 88.3%;
+  align-self: flex-start;
+}
+.inv-slot {
+  flex: 1 1 0;
+  height: 8.5vmin;
+  background: rgba(255,255,255,0.1);
+  border: 1.5px dashed rgba(255,255,255,0.32);
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inv-slot.filled {
+  border-style: solid;
+  border-color: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.2);
+}
+.inv-slot img {
+  width: 76%;
+  height: 76%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+  pointer-events: none;
+}
+.inv-slot img[data-item="socks"] {
+  transform: translateY(10%);
+}
+
+.inv-drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5));
+  z-index: 999;
+  touch-action: none;
+}
+.inv-drag-ghost.flying-back {
+  transition: left .25s ease, top .25s ease, width .25s ease, height .25s ease;
+}
+.inv-slot.drag-source img {
+  visibility: hidden;
+}
+.inv-tooltip {
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20,20,25,0.88);
+  color: #f4ead9;
+  font-size: 1.7vmin;
+  padding: 3% 9%;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+.inv-slot.filled:hover .inv-tooltip { opacity: 1; }
+
+/* ---- wudu wash cutscene ---- */
+
+#scene-cutscene {
+  background: #000;
+}
+.cutscene-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.cutscene-frame.active {
+  opacity: 1;
+}

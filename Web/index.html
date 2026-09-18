@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Деревня Баракатово</title>
+<link rel="stylesheet" href="style.css?v=45">
+</head>
+<body>
+
+<div id="wrap">
+  <div id="stage">
+
+    <!-- ===================== ROOM ===================== -->
+    <div id="scene-room" class="screen active">
+      <img class="full bg" src="assets/img/background.jpg" alt="">
+      <img id="bed-img" class="full" src="assets/img/bed/sleeping.png" alt="">
+
+      <img id="window-img-room" class="full" src="assets/img/window/closed-2000.png?v=3" alt="">
+      <button id="hit-shutters" class="hit"></button>
+
+      <button id="hit-clock" class="hit round-hit">
+        <img class="clock-icon-face" src="assets/img/clock/face.png" alt="">
+        <div class="clock-icon-hand hour"></div>
+        <div class="clock-icon-hand minute"></div>
+      </button>
+
+      <button id="hit-schedule" class="hit">
+        <div id="schedule-icon">
+          <span class="pin"></span>
+          <span class="line">время намазов</span>
+          <span class="line">в Баракатово</span>
+        </div>
+      </button>
+
+      <div id="nor-box" class="hitbox hidden">
+        <img id="nor-img" src="assets/img/nor/neutral-v2.png" alt="">
+      </div>
+      <button id="hit-nor" class="hit hidden"></button>
+
+      <div id="hint"></div>
+      <div id="dialogue" class="hidden">
+        <div id="dialogue-bubble">
+          <p id="dialogue-text"></p>
+          <span id="dialogue-tail"></span>
+        </div>
+      </div>
+
+      <button id="hit-to-room2" class="side-nav right">›</button>
+    </div>
+
+    <!-- ===================== WINDOW CLOSEUP ===================== -->
+    <div id="scene-window" class="screen">
+      <button class="back-btn" data-back-window>‹</button>
+      <div id="window-zoom-wrap">
+        <img id="window-img-closeup" class="full" src="assets/img/window/closed-2000.png?v=3" alt="">
+        <button id="hit-open-shutters" class="hit"></button>
+        <button id="hit-mosque" class="hit hidden"></button>
+      </div>
+    </div>
+
+    <!-- ===================== CLOCK CLOSEUP ===================== -->
+    <div id="scene-clock" class="screen">
+      <button class="back-btn" data-back>‹</button>
+      <div id="clock-face-wrap">
+        <img class="face" src="assets/img/clock/face.png" alt="">
+        <div class="hand" id="hand-hour"><img src="assets/img/clock/hour-hand.png" alt=""></div>
+        <div class="hand" id="hand-minute"><img src="assets/img/clock/minute-hand.png" alt=""></div>
+      </div>
+      <div id="time-readout">12 : 00</div>
+      <div id="clock-success" class="hidden">
+        <div class="badge">✦</div>
+        <h2>Время установлено правильно!</h2>
+        <p>Наступил Фаджр</p>
+      </div>
+      <div class="clock-controls">
+        <div class="control-group">
+          <span class="label">Час</span>
+          <div class="control-buttons">
+            <button class="ctrl-btn pink" id="btn-hour-left"><img src="assets/img/clock/hour-down.png" alt=""></button>
+            <button class="ctrl-btn pink" id="btn-hour-right"><img src="assets/img/clock/hour-up.png" alt=""></button>
+          </div>
+        </div>
+        <div class="control-group">
+          <span class="label">Минута</span>
+          <div class="control-buttons">
+            <button class="ctrl-btn yellow" id="btn-min-left"><img src="assets/img/clock/min-down.png" alt=""></button>
+            <button class="ctrl-btn yellow" id="btn-min-right"><img src="assets/img/clock/min-up.png" alt=""></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SCHEDULE CLOSEUP ===================== -->
+    <div id="scene-schedule" class="screen">
+      <button class="back-btn" data-back>‹</button>
+      <div id="schedule-card">
+        <h2>Время намазов</h2>
+        <div class="schedule-row"><span class="pname">Фаджр</span><span class="ptime">5:30</span></div>
+        <div class="schedule-row"><span class="pname">Зухр</span><span class="ptime">13:05</span></div>
+        <div class="schedule-row"><span class="pname">Аср</span><span class="ptime">16:40</span></div>
+        <div class="schedule-row"><span class="pname">Магриб</span><span class="ptime">19:50</span></div>
+        <div class="schedule-row"><span class="pname">Иша</span><span class="ptime">21:20</span></div>
+        <p class="schedule-note">Деревня Баракатово</p>
+      </div>
+    </div>
+
+    <!-- ===================== ROOM 2 (стена со шкафом и дверью в ванную) ===================== -->
+    <div id="scene-room2" class="screen">
+      <img class="full" src="assets/img/room2/wall2.png?v=3" alt="">
+      <img id="wardrobe-img" class="full" src="assets/img/room2/wardrobe.png?v=1" alt="">
+      <img id="bag-img" src="assets/img/room2/bag-item.png?v=2" alt="">
+      <img id="boots-img" src="assets/img/room2/boots-item.png?v=1" alt="">
+      <img id="door-img" class="full" src="assets/img/room2/door-closed.png?v=1" alt="">
+      <img id="nor-redress-img" class="hidden" src="assets/img/redress/redress-1.png?v=1" alt="">
+      <button id="hit-door" class="hit"></button>
+      <button id="hit-wardrobe-drawer" class="hit"></button>
+      <button id="hit-bag" class="hit"></button>
+      <button id="hit-boots" class="hit"></button>
+
+      <button id="hit-to-room1" class="side-nav left">‹</button>
+
+      <div id="room2-dialogue" class="hidden">
+        <div id="room2-dialogue-bubble">
+          <p id="room2-dialogue-text"></p>
+          <span id="room2-dialogue-tail"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== КРУПНЫЙ ПЛАН ГАРДЕРОБА ===================== -->
+    <div id="scene-wardrobe" class="screen">
+      <button class="back-btn" data-back-wardrobe>‹</button>
+      <img class="full" src="assets/img/room2/wardrobe-closeup.png?v=3" alt="">
+      <img id="hijab-img" src="assets/img/room2/hijab-item.png?v=1" alt="">
+      <img id="dress-img" src="assets/img/room2/dress-item.png?v=1" alt="">
+      <img id="socks-img" src="assets/img/room2/socks-item.png?v=1" alt="">
+      <button id="hit-hijab" class="hit"></button>
+      <button id="hit-dress" class="hit"></button>
+      <button id="hit-socks" class="hit"></button>
+    </div>
+
+    <!-- ===================== ВАННАЯ ===================== -->
+    <div id="scene-bath" class="screen">
+      <img id="bath-img" class="full" src="assets/img/room2/bath-no-nor.png?v=2" alt="">
+      <img id="cardkit-bath-prop" class="full hidden" src="assets/img/room2/cardkit-in-bath.png?v=1" alt="">
+      <button id="hit-bath-door" class="hit"></button>
+      <button id="hit-cards" class="hit"></button>
+
+      <div id="bath-dialogue" class="hidden">
+        <div id="bath-dialogue-bubble">
+          <p id="bath-dialogue-text"></p>
+          <span id="bath-dialogue-tail"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== КАРТОЧКИ ОМОВЕНИЯ (крупный план) ===================== -->
+    <div id="scene-cards" class="screen">
+      <button class="back-btn" data-back-cards>‹</button>
+      <div id="board-frame"></div>
+      <img id="cards-locked-img" src="assets/img/room2/cards/cardkit-bg.png?v=1" alt="">
+      <div id="card-slots"></div>
+      <div id="card-arrows"></div>
+      <div id="card-layer"></div>
+      <button id="hit-card-pile" class="hit"></button>
+
+      <div id="cards-dialogue" class="hidden">
+        <div id="cards-dialogue-bubble">
+          <p id="cards-dialogue-text"></p>
+          <span id="cards-dialogue-tail"></span>
+        </div>
+      </div>
+
+      <div id="cards-success" class="hidden">
+        <div class="badge">✦</div>
+        <h2>Последовательность омовения верна!</h2>
+        <p>Карточки разложены правильно!</p>
+        <span class="tap-hint">Продолжить</span>
+      </div>
+      <img id="card-reward" class="hidden" src="assets/img/room2/cards/card-1.jpg?v=1" alt="">
+    </div>
+
+    <!-- ===================== СЦЕНА ОМОВЕНИЯ (нарезка cut scene.PNG) ===================== -->
+    <div id="scene-cutscene" class="screen">
+      <img class="cutscene-frame active" id="cutscene-1" src="assets/img/cutscene/cutscene-1.png?v=1" alt="">
+      <img class="cutscene-frame" id="cutscene-2" src="assets/img/cutscene/cutscene-2.png?v=1" alt="">
+      <img class="cutscene-frame" id="cutscene-3" src="assets/img/cutscene/cutscene-3.png?v=1" alt="">
+      <img class="cutscene-frame" id="cutscene-4" src="assets/img/cutscene/cutscene-4.png?v=1" alt="">
+    </div>
+
+    <!-- ===================== ИНВЕНТАРЬ (поверх всех экранов) ===================== -->
+    <div id="inventory-wrap">
+      <button id="inventory-toggle" aria-label="Инвентарь">▲</button>
+      <div id="inventory-bar"></div>
+    </div>
+
+    <div id="lang-wrap">
+      <div id="lang-menu" class="hidden">
+        <button id="lang-menu-toggle" class="menu-action">Язык</button>
+        <div id="lang-submenu" class="hidden">
+          <a href="index.html" class="lang-option current">🇷🇺 Русский</a>
+          <a href="../Web-ar/index.html?continue=1" class="lang-option">🇸🇦 العربية</a>
+        </div>
+        <button id="reset-progress-btn" class="menu-action">Начать заново</button>
+      </div>
+      <button id="lang-gear" title="Настройки">⚙</button>
+    </div>
+
+    <div id="save-prompt" class="hidden">
+      <div class="save-prompt-card">
+        <h2>Продолжить игру?</h2>
+        <p>У тебя есть сохранённый прогресс.</p>
+        <div class="save-prompt-buttons">
+          <button id="save-prompt-continue" class="menu-action">Продолжить</button>
+          <button id="save-prompt-restart" class="menu-action">Начать заново</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="reset-confirm" class="hidden">
+      <div class="save-prompt-card">
+        <h2>Начать заново?</h2>
+        <p>Ты действительно хочешь начать заново? Весь прогресс будет удалён.</p>
+        <div class="save-prompt-buttons">
+          <button id="reset-confirm-yes" class="menu-action">Да, начать заново</button>
+          <button id="reset-confirm-no" class="menu-action">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<audio id="audio-azan" src="assets/audio/azan.m4a"></audio>
+<audio id="audio-bathroom-amb" src="assets/audio/bathroom.mp3" loop></audio>
+<audio id="audio-narrator-clock" src="assets/audio/narrator-clock.mp3?v=3"></audio>
+<audio id="audio-narrator-cards" src="assets/audio/narrator-cards.mp3?v=3"></audio>
+<audio id="audio-nasheed" src="assets/audio/nasheed_1.mp3" loop></audio>
+<audio id="audio-narrator-reset" src="assets/audio/narrator-reset.mp3"></audio>
+<audio id="audio-nor10" src="assets/audio/nor10.m4a"></audio>
+<audio id="audio-nor1" src="assets/audio/nor1.wav?v=3"></audio>
+<audio id="audio-nor2" src="assets/audio/nor2.wav?v=3"></audio>
+<audio id="audio-nor3" src="assets/audio/nor3.wav"></audio>
+<audio id="audio-nor4" src="assets/audio/nor4.wav"></audio>
+<audio id="audio-nor5" src="assets/audio/nor5.wav"></audio>
+<audio id="audio-nor6" src="assets/audio/nor6.wav"></audio>
+<audio id="audio-nor7" src="assets/audio/nor7.wav"></audio>
+<audio id="audio-nor8" src="assets/audio/nor8.wav"></audio>
+<audio id="audio-nor9" src="assets/audio/nor9.wav"></audio>
+<audio id="audio-clock-loop" src="assets/audio/clocks.mp3"></audio>
+<audio id="audio-buttonclick" src="assets/audio/buttonclick.wav"></audio>
+<audio id="audio-puzzlesolved" src="assets/audio/puzzlesolved.wav"></audio>
+<audio id="audio-door" src="assets/audio/door.wav?v=2"></audio>
+<audio id="audio-wardrobe" src="assets/audio/wardrobe.wav?v=2"></audio>
+<audio id="audio-cardshuffle" src="assets/audio/cardshuffling.mp3"></audio>
+<audio id="audio-move" src="assets/audio/move.mp3"></audio>
+<audio id="audio-backtoinv" src="assets/audio/backtoinventory.wav"></audio>
+<audio id="audio-water-valve" src="assets/audio/water-valve.wav"></audio>
+<audio id="audio-water-in-sink" src="assets/audio/water-in-sink.wav"></audio>
+<audio id="audio-faucet-sink" src="assets/audio/faucet-sink.mp3"></audio>
+<audio id="audio-drops" src="assets/audio/drops.mp3"></audio>
+<audio id="audio-claps" src="assets/audio/claps.mp3"></audio>
+<audio id="audio-towel" src="assets/audio/towel.mp3"></audio>
+<audio id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
+
+<script src="game.js?v=72"></script>
+</body>
+</html>
