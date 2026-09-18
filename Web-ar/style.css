@@ -6,6 +6,7 @@ html, body {
   background: #23262d;
   font-family: -apple-system, "Segoe UI", sans-serif;
   overflow: hidden;
+  touch-action: manipulation; /* kills the ~300ms tap delay on touch devices */
 }
 
 #wrap {
