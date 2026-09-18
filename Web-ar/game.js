@@ -823,7 +823,7 @@ el('hit-cards').addEventListener('click', () => {
   updateCardsView();
   showScreen('cards');
   if (state.norGreeted && !state.cardsSolved) {
-    playCardsDialogue('همم، ما هو الترتيب الصحيح لخطوات الوضوء؟ ما زلت أخلط بينها حتى الآن.');
+    playCardsDialogue('همم، ما هو الترتيب الصحيح لخطوات الوضوء؟ ما زلت أخلط بينها حتى الآن.', el('audio-nor10'));
   }
 });
 document.querySelectorAll('[data-back-cards]').forEach(btn =>
