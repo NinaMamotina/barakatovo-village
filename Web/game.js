@@ -225,6 +225,7 @@ const state = {
   norOutfitStage: 0, // how many NOR_OUTFIT_SEQUENCE steps she's dressed so far, in order
   readyForNamaz: false, // true once she's fully dressed and said it's time to pray — unlocks room3/room4
   norRoom4Shown: false, // true once Nor has appeared by the door in room4 after the carpet was found
+  carpetDir: 'w', // which way the placed carpet points: n / e / s / w (s is the right one)
   carpetPlaced: false, // true once the carpet has been dragged onto the floor between the door and the nightstand
   hintsFound: { kibla: false, compass: false, south: false }, // which of the 3 direction hints the player has already seen
   computerOn: false, // toggled by the power button — reflected on both the far view and the closeup
@@ -249,7 +250,7 @@ const SAVED_FIELDS = [
   'hour', 'minute', 'clockCorrect', 'window', 'bed', 'norAwake',
   'norGreeted', 'norSeenInBath', 'cardsSolved', 'norLeftBath',
   'norOutfitStage', 'readyForNamaz', 'inventory', 'norRoom4Shown',
-  'carpetPlaced', 'hintsFound', 'computerOn', 'videoOpened', 'searchOpened',
+  'carpetPlaced', 'carpetDir', 'hintsFound', 'computerOn', 'videoOpened', 'searchOpened',
   'compassHintGiven', 'compassOpenLineDone', 'compassIntroDone', 'compassWallLines',
 ];
 
@@ -369,8 +370,10 @@ function applyLoadedState() {
 
   if (state.carpetPlaced) {
     el('carpet-placed-img').classList.remove('hidden');
+    updateCarpetImage();
     el('hints-wrap').classList.remove('hidden');
   }
+  updateCarpetArrows();
 
   updateComputerVisual();
 
@@ -437,7 +440,10 @@ function openCompassOverlay() {
   el('compass-overlay').classList.remove('hidden');
   Object.keys(COMPASS_SFX_URLS).forEach(loadCompassSfx);
   updateNorFollow();
-  if (state.compassIntroDone && !compassDemoRunning) onCompassWallArrival();
+  if (state.compassIntroDone && !compassDemoRunning) {
+    showDirButtons();
+    onCompassWallArrival();
+  }
   maybePlayCompassIntro();
 }
 
@@ -593,25 +599,31 @@ function restartCompassPuzzle() {
   compassDemoLater(() => runCompassDemo(true), 1500);
 }
 
-// what Nor says the first time she stands at each wall: where north is, and then
-// which side of the world she is facing
+// what Nor says every time she stands at a wall with the compass in hand: where north is,
+// and which side of the world she is facing — so there is never silence between walls
 const COMPASS_WALL_LINES = {
   room: 'Здесь красная стрелка смотрит прямо вперёд — туда, где север. А какая сторона света тогда передо мной?',
   room2: 'А здесь красная стрелка показывает влево, значит север слева от меня. Какая же сторона света тогда передо мной?',
   room3: 'А здесь север оказался на противоположной стене! Тогда какая же сторона света передо мной?',
+  room4: 'Ага, красная стрелка справа, значит и северный полюс тоже справа. А какая часть света тогда передо мной?',
 };
-// arriving at another wall with the compass open: the answers pop up again, and the
-// first time at each wall Nor says where north is
+let lastCompassLine = null;
+// arriving at another wall with the compass open: the answers stay where they are (they only
+// pop up again when the compass is taken out anew); Nor says the line for this wall
 function onCompassWallArrival() {
   if (el('compass-overlay').classList.contains('hidden') || compassDemoRunning || !state.compassIntroDone) return;
-  showDirButtons();
+  refreshDirButtons();
   const line = COMPASS_WALL_LINES[compassWall];
-  if (line && !state.compassWallLines[compassWall]) {
-    state.compassWallLines[compassWall] = true;
-    saveProgress();
+  if (line) {
+    lastCompassLine = line;
     showCompassBubble(line, 9000);
   }
 }
+// tapping Nor next to the compass repeats what she said last
+el('nor-follow-img').addEventListener('click', () => {
+  const line = lastCompassLine || COMPASS_WALL_LINES[compassWall];
+  if (line) showCompassBubble(line, 9000);
+});
 
 function runCompassDemo(restart) {
   cancelCompassDemo();
@@ -1591,7 +1603,33 @@ function updateHintsUI() {
   const southSlot = el('hint-slot-3');
   southSlot.classList.toggle('filled', !!state.hintsFound.south);
   southSlot.textContent = state.hintsFound.south ? 'Компьютер — это Юг!' : '';
+  updateCarpetArrows();
 }
+
+// with all three hints found, the placed carpet can be turned; the right way is towards the south
+const CARPET_ORDER = ['n', 'e', 's', 'w']; // clockwise
+function updateCarpetImage() {
+  el('carpet-placed-img').src = 'assets/img/room4/carpet-' + (state.carpetDir || 'w') + '.webp?v=1';
+}
+function updateCarpetArrows() {
+  const all = state.hintsFound.kibla && state.hintsFound.compass && state.hintsFound.south;
+  const show = !!(state.carpetPlaced && all && state.carpetDir !== 's');
+  el('carpet-rot-left').classList.toggle('hidden', !show);
+  el('carpet-rot-right').classList.toggle('hidden', !show);
+}
+function rotateCarpet(step) {
+  const k = CARPET_ORDER.indexOf(state.carpetDir || 'w');
+  state.carpetDir = CARPET_ORDER[(k + step + 4) % 4];
+  updateCarpetImage();
+  playSfx(el('audio-move'), -12);
+  if (state.carpetDir === 's') {
+    playSfx(el('audio-puzzlesolved'), -16);
+    updateCarpetArrows();
+  }
+  saveProgress();
+}
+el('carpet-rot-left').addEventListener('click', () => rotateCarpet(-1));
+el('carpet-rot-right').addEventListener('click', () => rotateCarpet(1));
 let kiblaWhereSouthPending = false;
 el('sticker-lightbox').addEventListener('click', () => {
   const wasKibla = el('sticker-lightbox-img').src.includes('board-zoom-4');
@@ -1908,6 +1946,8 @@ function setupInventoryDrag() {
       el('inventory-wrap').style.pointerEvents = '';
       state.carpetPlaced = true;
       el('carpet-placed-img').classList.remove('hidden');
+      updateCarpetImage();
+      updateCarpetArrows();
       playSfx(el('audio-move'), -12);
       removeInventoryItem('carpet');
       ghost.remove();

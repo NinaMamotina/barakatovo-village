@@ -1903,3 +1903,28 @@ html, body {
   z-index: 70;
 }
 #compass-fade.on { opacity: 1; }
+
+/* arrows beside the carpet, once all three hints are known, to turn it */
+.carpet-rot {
+  position: absolute;
+  bottom: 6%;
+  width: 8.5%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: rgba(20,20,25,0.45);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #f4ead9;
+  font-size: 4.6vmin;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.carpet-rot.hidden { display: none !important; }
+#carpet-rot-left { left: 24%; }
+#carpet-rot-right { right: 24%; }
+/* tapping Nor next to the compass repeats her last line */
+#nor-follow-img { pointer-events: auto; cursor: pointer; z-index: 8; }
