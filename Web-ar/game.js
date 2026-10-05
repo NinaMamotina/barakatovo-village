@@ -88,6 +88,11 @@ function routeToMaster(audioEl, bus) {
   routedNodes.set(audioEl, source);
 }
 
+// every tap inside the computer screen (icons, search, results, close, video buttons)
+function playComputerClick() {
+  playSfx(el('audio-computer-click'), -6);
+}
+
 function playSfx(audioEl, db, startAt) {
   routeToMaster(audioEl, false);
   audioEl.currentTime = startAt || 0;
@@ -854,11 +859,12 @@ el('hit-computer-power').addEventListener('click', () => {
 el('hit-internet-icon').addEventListener('click', () => {
   if (state.talking || !state.computerOn) return;
   state.searchOpened = true;
-  playSfx(el('audio-move'), -12);
+  playComputerClick();
   updateComputerVisual();
   saveProgress();
 });
 el('computer-search-bar').addEventListener('click', () => {
+  playComputerClick();
   // the real answer only shows up once Nor has actually asked the
   // question — before that the child would have no way to know it
   el('search-suggestion-compass').classList.toggle('hidden', !state.compassHintGiven);
@@ -868,7 +874,7 @@ document.querySelectorAll('.search-suggestion').forEach(btn => {
   btn.addEventListener('click', () => {
     if (btn.dataset.correct === 'true') {
       state.videoOpened = true;
-      playSfx(el('audio-move'), -12);
+      playComputerClick();
       updateComputerVisual();
       saveProgress();
       return;
@@ -877,31 +883,32 @@ document.querySelectorAll('.search-suggestion').forEach(btn => {
     const key = btn.id.replace('search-suggestion-', '');
     const content = SEARCH_RESULT_APPS[key];
     if (content) {
-      playSfx(el('audio-move'), -12);
+      playComputerClick();
       openComputerWindow(content);
     }
   });
 });
 el('hit-icon-study').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playComputerClick();
   openComputerWindow(COMPUTER_APPS.study);
 });
 el('hit-icon-photos').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playComputerClick();
   openComputerWindow(COMPUTER_APPS.photos);
 });
 el('hit-icon-documents').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playComputerClick();
   openComputerWindow(COMPUTER_APPS.documents);
 });
 el('computer-window-close').addEventListener('click', () => {
-  playSfx(el('audio-move'), -12);
+  playComputerClick();
   closeComputerWindow();
 });
 el('computer-video-play').addEventListener('click', () => {
+  playComputerClick();
   const video = el('computer-video');
   if (video.ended) video.currentTime = 0;
   video.classList.remove('computer-video-ended-hide');
