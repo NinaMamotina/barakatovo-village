@@ -889,31 +889,31 @@ html, body {
   transform-origin: top center;
 }
 #hit-internet-icon {
-  left: 48.2%;
-  top: 21.35%;
-  width: 6.5%;
-  height: 6.8%;
+  left: 72.13%;
+  top: 26.0%;
+  width: 13.01%;
+  height: 13.77%;
   z-index: 7;
 }
 #hit-icon-study {
-  left: 17.75%;
-  top: 21.3%;
-  width: 6.8%;
-  height: 7.25%;
+  left: 14.3%;
+  top: 26.1%;
+  width: 12.92%;
+  height: 13.77%;
   z-index: 7;
 }
 #hit-icon-photos {
-  left: 32.95%;
-  top: 21.3%;
-  width: 6.85%;
-  height: 7.25%;
+  left: 43.18%;
+  top: 26.1%;
+  width: 13.01%;
+  height: 13.77%;
   z-index: 7;
 }
 #hit-icon-documents {
-  left: 40.6%;
-  top: 21.3%;
-  width: 6.8%;
-  height: 7.25%;
+  left: 57.71%;
+  top: 26.1%;
+  width: 12.92%;
+  height: 13.77%;
   z-index: 7;
 }
 #computer-video-wrap {
@@ -976,9 +976,9 @@ html, body {
 }
 #computer-search-wrap {
   position: absolute;
-  left: 10%;
+  left: 14.25%;
   top: 19%;
-  width: 78%;
+  width: 70.9%;
   z-index: 8;
 }
 #computer-search-bar {
@@ -1646,4 +1646,19 @@ html, body {
   height: 25.1%;
   border-radius: 50%;
   z-index: 30;
+}
+
+/* desktop icons are tiny on phones: scale the baked icon row up around a fixed
+   origin, and the hit areas above were recomputed with the same transform */
+#computer-icons-img {
+  transform: scale(1.9);
+  transform-origin: 21.59% 15.97%;
+  /* dark brown outline so the tiles don't melt into the wallpaper */
+  filter: drop-shadow(1.4px 0 0 #4a2f1c) drop-shadow(-1.4px 0 0 #4a2f1c) drop-shadow(0 1.4px 0 #4a2f1c) drop-shadow(0 -1.4px 0 #4a2f1c);
+}
+/* the globe tile was drawn a little smaller than the others: grown to the same size and height */
+#computer-internet-icon-img {
+  transform: scale(2.0022);
+  transform-origin: 24.3% 16.63%;
+  filter: drop-shadow(1.3px 0 0 #4a2f1c) drop-shadow(-1.3px 0 0 #4a2f1c) drop-shadow(0 1.3px 0 #4a2f1c) drop-shadow(0 -1.3px 0 #4a2f1c);
 }
