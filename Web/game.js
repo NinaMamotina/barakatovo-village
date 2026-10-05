@@ -88,6 +88,31 @@ function routeToMaster(audioEl, bus) {
   routedNodes.set(audioEl, source);
 }
 
+// the computer's running hum loops while it is switched on and the player is
+// looking at its closeup; leaving to the wider view or switching it off stops it
+let computerHumTimer = null;
+function updateComputerHum(delayMs) {
+  clearTimeout(computerHumTimer);
+  const hum = el('audio-computer-hum');
+  const active = document.querySelector('.screen.active');
+  const should = state.computerOn && active && active.id === 'scene-computer';
+  if (!should) {
+    if (!hum.paused) { hum.pause(); hum.currentTime = 0; }
+    return;
+  }
+  if (!hum.paused) return;
+  const start = () => {
+    const stillActive = document.querySelector('.screen.active');
+    if (!state.computerOn || !stillActive || stillActive.id !== 'scene-computer') return;
+    routeToMaster(hum, false);
+    hum.loop = true;
+    hum.volume = dbToVol(-12);
+    hum.play();
+  };
+  if (delayMs) computerHumTimer = setTimeout(start, delayMs);
+  else start();
+}
+
 // every tap inside the computer screen (icons, search, results, back/close, video buttons)
 function playComputerClick() {
   playSfx(el('audio-computer-click'), -6);
@@ -272,6 +297,7 @@ function showScreen(name) {
   el('scene-' + name).classList.add('active');
   updateClockLoopForScreen(name);
   updateBathAmbience(name);
+  updateComputerHum();
   saveProgress();
   const wall = COMPASS_WALL_OF_SCREEN[name];
   if (wall) {
@@ -979,8 +1005,10 @@ el('hit-computer-power').addEventListener('click', () => {
   }
   playSfx(el('audio-buttonclick'), -8);
   // switching on: the boot sound follows the click after a beat
-  if (state.computerOn) setTimeout(() => playSfx(el('audio-compturn'), -6), 100);
+  if (state.computerOn) setTimeout(() => playSfx(el('audio-compturn'), -16), 100);
   updateComputerVisual();
+  // the hum starts together with the power button
+  updateComputerHum();
   saveProgress();
 });
 el('hit-internet-icon').addEventListener('click', () => {
