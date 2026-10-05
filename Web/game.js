@@ -459,6 +459,8 @@ function cancelCompassDemo() {
   compassDemoTimers.forEach(clearTimeout);
   compassDemoTimers = [];
   compassLock = false;
+  const roulette = el('audio-ruletka');
+  if (!roulette.paused) { roulette.pause(); roulette.currentTime = 0; }
   el('compass-dir-buttons').classList.add('hidden');
   el('compass-overlay').classList.remove('dir-mode');
   document.querySelectorAll('.compass-dir-btn').forEach(b => b.classList.remove('shown', 'selected'));
@@ -471,6 +473,8 @@ function runCompassDemo() {
   const line3 = 'Ага, красная стрелка справа, значит и северный полюс тоже справа. А какая часть света тогда передо мной?';
   const T1 = 12000, T2 = 5500, T3 = 9500;
   playRoom4Dialogue(line1, null, T1);
+  // roulette ticking as the needle starts spinning
+  playSfx(el('audio-ruletka'), -10);
   // fast spin for the whole first line
   let i = 0;
   for (let t = 0; t < T1; t += 90) {
