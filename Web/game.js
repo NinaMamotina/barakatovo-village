@@ -1617,6 +1617,7 @@ function carpetTappable() {
 }
 function updateCarpetArrows() {
   el('carpet-rot-btn').classList.toggle('hidden', !carpetTappable());
+  el('carpet-placed-img').classList.toggle('carpet-tappable', carpetTappable());
 }
 function rotateCarpet(step) {
   const k = CARPET_ORDER.indexOf(state.carpetDir || 'w');
@@ -1626,6 +1627,12 @@ function rotateCarpet(step) {
   if (state.carpetDir === 's') {
     playSfx(el('audio-puzzlesolved'), -16);
     updateCarpetArrows();
+    // the carpet now points at the qibla: Nor reacts
+    setTimeout(() => {
+      const text = 'Ура, коврик смотрит на юг — прямо в сторону Киблы! Теперь я готова к намазу.';
+      playRoom4Dialogue(text, null, 8000);
+      lastRoom4Line = { text, audioId: null };
+    }, 700);
   }
   saveProgress();
 }
