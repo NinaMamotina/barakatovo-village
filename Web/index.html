@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Деревня Баракатово</title>
-<link rel="stylesheet" href="style.css?v=165">
+<link rel="stylesheet" href="style.css?v=192">
 </head>
 <body>
 
@@ -273,8 +273,20 @@
 
     <!-- the compass, opened from the inventory once Nor says it can be used -->
     <div id="compass-overlay" class="hidden">
-      <img id="compass-overlay-img" src="assets/img/room4/compass-room4.webp?v=1" alt="Компас">
+      <div id="compass-dir-buttons" class="hidden">
+        <button class="compass-dir-btn" data-dir="north">Север</button>
+        <button class="compass-dir-btn" data-dir="south">Юг</button>
+        <button class="compass-dir-btn" data-dir="west">Запад</button>
+        <button class="compass-dir-btn" data-dir="east">Восток</button>
+      </div>
+      <div id="compass-stack">
+        <img id="compass-overlay-img" src="assets/img/room4/compass-room4.webp?v=2" alt="Компас">
+        <!-- W and E are drawn on their own layer, swapped into the right places, over every needle picture -->
+        <img id="compass-letters-img" src="assets/img/room4/compass-letters.webp?v=1" alt="">
+      </div>
     </div>
+    <!-- extra dimming behind the open compass: sits below Nor and her bubble so they stay in normal colour -->
+    <div id="compass-dim"></div>
 
     <div id="sticker-lightbox" class="hidden">
       <img id="sticker-lightbox-img" src="" alt="">
@@ -480,6 +492,6 @@
 <audio preload="auto" id="audio-towel" src="assets/audio/towel.mp3"></audio>
 <audio preload="auto" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
 
-<script src="game.js?v=181"></script>
+<script src="game.js?v=192"></script>
 </body>
 </html>
