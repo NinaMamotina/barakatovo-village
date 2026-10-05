@@ -1758,12 +1758,12 @@ html, body {
 #computer-icons-img {
   transform: scale(1.9);
   transform-origin: 21.59% 15.97%;
-  /* dark brown outline so the tiles don't melt into the wallpaper */
-  filter: drop-shadow(1.4px 0 0 #4a2f1c) drop-shadow(-1.4px 0 0 #4a2f1c) drop-shadow(0 1.4px 0 #4a2f1c) drop-shadow(0 -1.4px 0 #4a2f1c);
+  /* thin soft-brown outline so the tiles don't melt into the wallpaper */
+  filter: drop-shadow(0.5px 0 0 #8b6b50) drop-shadow(-0.5px 0 0 #8b6b50) drop-shadow(0 0.5px 0 #8b6b50) drop-shadow(0 -0.5px 0 #8b6b50);
 }
 /* the globe tile was drawn a little smaller than the others: grown to the same size and height */
 #computer-internet-icon-img {
   transform: scale(2.0022);
   transform-origin: 24.3% 16.63%;
-  filter: drop-shadow(1.3px 0 0 #4a2f1c) drop-shadow(-1.3px 0 0 #4a2f1c) drop-shadow(0 1.3px 0 #4a2f1c) drop-shadow(0 -1.3px 0 #4a2f1c);
+  filter: drop-shadow(0.5px 0 0 #8b6b50) drop-shadow(-0.5px 0 0 #8b6b50) drop-shadow(0 0.5px 0 #8b6b50) drop-shadow(0 -0.5px 0 #8b6b50);
 }
