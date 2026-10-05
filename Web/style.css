@@ -1924,7 +1924,7 @@ html, body {
   padding: 0;
 }
 .carpet-rot.hidden { display: none !important; }
-#carpet-rot-left { left: 24%; }
-#carpet-rot-right { right: 24%; }
+#carpet-rot-left { left: 38%; bottom: 20%; }
+#carpet-rot-right { right: 38%; bottom: 20%; }
 /* tapping Nor next to the compass repeats her last line */
 #nor-follow-img { pointer-events: auto; cursor: pointer; z-index: 8; }
