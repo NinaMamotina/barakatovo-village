@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>قرية بركاتوفو</title>
-<link rel="stylesheet" href="style.css?v=33">
+<link rel="stylesheet" href="style.css?v=150">
 </head>
 <body>
 
@@ -13,14 +13,14 @@
 
     <!-- ===================== ROOM ===================== -->
     <div id="scene-room" class="screen active">
-      <img class="full bg" src="assets/img/background.jpg" alt="">
-      <img id="bed-img" class="full" src="assets/img/bed/sleeping.png" alt="">
+      <img class="full bg" src="assets/img/background.jpg?v=1" alt="">
+      <img id="bed-img" class="full" src="assets/img/bed/sleeping.webp?v=1" alt="">
 
-      <img id="window-img-room" class="full" src="assets/img/window/closed-2000.png?v=3" alt="">
+      <img id="window-img-room" class="full" src="assets/img/window/closed-2000.webp?v=4" alt="">
       <button id="hit-shutters" class="hit"></button>
 
       <button id="hit-clock" class="hit round-hit">
-        <img class="clock-icon-face" src="assets/img/clock/face.png" alt="">
+        <img class="clock-icon-face" src="assets/img/clock/face.webp?v=1" alt="">
         <div class="clock-icon-hand hour"></div>
         <div class="clock-icon-hand minute"></div>
       </button>
@@ -34,7 +34,7 @@
       </button>
 
       <div id="nor-box" class="hitbox hidden">
-        <img id="nor-img" src="assets/img/nor/neutral-v2.png" alt="">
+        <img id="nor-img" src="assets/img/redress/redress-1.webp?v=1" alt="">
       </div>
       <button id="hit-nor" class="hit hidden"></button>
 
@@ -43,17 +43,19 @@
         <div id="dialogue-bubble">
           <p id="dialogue-text"></p>
           <span id="dialogue-tail"></span>
+          <button id="dialogue-skip" class="dialogue-skip-btn">تخطي</button>
         </div>
       </div>
 
       <button id="hit-to-room2" class="side-nav right">‹</button>
+      <button id="hit-room-to-room4" class="side-nav left hidden">›</button>
     </div>
 
     <!-- ===================== WINDOW CLOSEUP ===================== -->
     <div id="scene-window" class="screen">
       <button class="back-btn" data-back-window>‹</button>
       <div id="window-zoom-wrap">
-        <img id="window-img-closeup" class="full" src="assets/img/window/closed-2000.png?v=3" alt="">
+        <img id="window-img-closeup" class="full" src="assets/img/window/closed-2000.webp?v=4" alt="">
         <button id="hit-open-shutters" class="hit"></button>
         <button id="hit-mosque" class="hit hidden"></button>
       </div>
@@ -63,9 +65,9 @@
     <div id="scene-clock" class="screen">
       <button class="back-btn" data-back>‹</button>
       <div id="clock-face-wrap">
-        <img class="face" src="assets/img/clock/face.png" alt="">
-        <div class="hand" id="hand-hour"><img src="assets/img/clock/hour-hand.png" alt=""></div>
-        <div class="hand" id="hand-minute"><img src="assets/img/clock/minute-hand.png" alt=""></div>
+        <img class="face" src="assets/img/clock/face.webp?v=1" alt="">
+        <div class="hand" id="hand-hour"><img src="assets/img/clock/hour-hand.webp" alt=""></div>
+        <div class="hand" id="hand-minute"><img src="assets/img/clock/minute-hand.webp" alt=""></div>
       </div>
       <div id="time-readout">12 : 00</div>
       <div id="clock-success" class="hidden">
@@ -77,15 +79,15 @@
         <div class="control-group">
           <span class="label">الساعة</span>
           <div class="control-buttons">
-            <button class="ctrl-btn pink" id="btn-hour-left"><img src="assets/img/clock/hour-down.png" alt=""></button>
-            <button class="ctrl-btn pink" id="btn-hour-right"><img src="assets/img/clock/hour-up.png" alt=""></button>
+            <button class="ctrl-btn pink" id="btn-hour-left"><img src="assets/img/clock/hour-down.webp" alt=""></button>
+            <button class="ctrl-btn pink" id="btn-hour-right"><img src="assets/img/clock/hour-up.webp" alt=""></button>
           </div>
         </div>
         <div class="control-group">
           <span class="label">الدقيقة</span>
           <div class="control-buttons">
-            <button class="ctrl-btn yellow" id="btn-min-left"><img src="assets/img/clock/min-down.png" alt=""></button>
-            <button class="ctrl-btn yellow" id="btn-min-right"><img src="assets/img/clock/min-up.png" alt=""></button>
+            <button class="ctrl-btn yellow" id="btn-min-left"><img src="assets/img/clock/min-down.webp" alt=""></button>
+            <button class="ctrl-btn yellow" id="btn-min-right"><img src="assets/img/clock/min-up.webp" alt=""></button>
           </div>
         </div>
       </div>
@@ -107,43 +109,182 @@
 
     <!-- ===================== ROOM 2 (الجدار مع الخزانة وباب الحمام) ===================== -->
     <div id="scene-room2" class="screen">
-      <img class="full" src="assets/img/room2/wall2.png?v=3" alt="">
-      <img id="wardrobe-img" class="full" src="assets/img/room2/wardrobe.png?v=1" alt="">
-      <img id="bag-img" src="assets/img/room2/bag-item.png?v=2" alt="">
-      <img id="boots-img" src="assets/img/room2/boots-item.png?v=1" alt="">
-      <img id="door-img" class="full" src="assets/img/room2/door-closed.png?v=1" alt="">
-      <img id="nor-redress-img" class="hidden" src="assets/img/redress/redress-1.png?v=1" alt="">
+      <img class="full" src="assets/img/room2/wall2.webp?v=5" alt="">
+      <img id="wardrobe-img" class="full" src="assets/img/room2/wardrobe.webp?v=2" alt="">
+      <img id="bag-img" src="assets/img/room2/bag-item.webp?v=2" alt="">
+      <img id="boots-img" src="assets/img/room2/boots-item.webp?v=1" alt="">
+      <img id="door-img" class="full" src="assets/img/room2/door-closed.webp?v=2" alt="">
+      <img id="nor-redress-img" class="hidden" src="assets/img/redress/redress-1.webp?v=1" alt="">
       <button id="hit-door" class="hit"></button>
       <button id="hit-wardrobe-drawer" class="hit"></button>
       <button id="hit-bag" class="hit"></button>
       <button id="hit-boots" class="hit"></button>
+      <button id="hit-mirror" class="hit"></button>
+      <button id="hit-booklet" class="hit"></button>
 
       <button id="hit-to-room1" class="side-nav left">›</button>
+      <button id="hit-room2-to-room3" class="side-nav right hidden">‹</button>
 
       <div id="room2-dialogue" class="hidden">
         <div id="room2-dialogue-bubble">
           <p id="room2-dialogue-text"></p>
           <span id="room2-dialogue-tail"></span>
+          <button id="room2-dialogue-skip" class="dialogue-skip-btn">تخطي</button>
         </div>
       </div>
+    </div>
+
+    <!-- ===================== ROOM 3 (переходная стена) ===================== -->
+    <div id="scene-room3" class="screen">
+      <img class="full" src="assets/img/room3/wall3.jpg?v=1" alt="">
+      <img class="full" src="assets/img/room3/desk.webp?v=1" alt="">
+      <img id="computer-far-img" class="full" src="assets/img/room3/computer-off-far.webp?v=1" alt="">
+      <button id="hit-computer" class="hit"></button>
+      <button id="hit-room3-to-room2" class="side-nav left">›</button>
+      <button id="hit-room3-to-room4" class="side-nav right">‹</button>
+    </div>
+
+    <!-- ===================== КРУПНЫЙ ПЛАН: КОМПЬЮТЕР ===================== -->
+    <div id="scene-computer" class="screen">
+      <button class="back-btn" data-back-computer>‹</button>
+      <img id="computer-wall-bg" class="full" src="assets/img/room3/wall3.jpg?v=1" alt="">
+      <img id="computer-closeup-img" class="full" src="assets/img/room3/computer-off-closeup.webp?v=1" alt="">
+      <img id="computer-icons-img" class="full hidden" src="assets/img/room3/icons-closeup.webp?v=1" alt="">
+      <img id="computer-internet-icon-img" class="full hidden" src="assets/img/room3/internet-icon-closeup.webp?v=1" alt="">
+      <button id="hit-computer-power" class="hit"></button>
+      <button id="hit-internet-icon" class="hit hidden"></button>
+      <button id="hit-icon-study" class="hit hidden"></button>
+      <button id="hit-icon-photos" class="hit hidden"></button>
+      <button id="hit-icon-documents" class="hit hidden"></button>
+
+      <div id="computer-video-wrap" class="hidden">
+        <img id="computer-video-bg" src="assets/img/room3/video-bg.webp?v=2" alt="">
+        <video id="computer-video" playsinline poster="assets/img/room3/video-bg.webp?v=2">
+          <source src="assets/video/compass-tutorial.mp4?v=2" type="video/mp4">
+        </video>
+      </div>
+      <img id="computer-video-frame" class="full hidden" src="assets/img/room3/video-frame.webp?v=1" alt="">
+      <img id="computer-video-top-layer" class="full hidden" src="assets/img/room3/video-top-layer.webp?v=1" alt="">
+      <button id="computer-video-play" class="hidden" aria-label="Play">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+
+      <div id="computer-search-wrap" class="hidden">
+        <button id="computer-search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <span>البحث في الإنترنت</span>
+        </button>
+        <div id="computer-search-suggestions" class="hidden">
+          <button id="search-suggestion-cats" class="search-suggestion" data-correct="false">فيديوهات مضحكة عن القطط</button>
+          <button id="search-suggestion-games" class="search-suggestion" data-correct="false">ألعاب مجانية عبر الإنترنت</button>
+          <button id="search-suggestion-compass" class="search-suggestion hidden" data-correct="true">كيف تعمل البوصلة؟</button>
+          <button id="search-suggestion-weather" class="search-suggestion" data-correct="false">طقس الغد</button>
+          <button id="search-suggestion-cookies" class="search-suggestion" data-correct="false">كيف تصنع الكوكيز</button>
+        </div>
+      </div>
+
+      <div id="computer-window" class="hidden">
+        <div id="computer-window-menu" class="hidden"></div>
+        <img id="computer-window-image" class="hidden" src="" alt="">
+        <video id="computer-window-video" class="hidden" playsinline controls></video>
+      </div>
+      <button id="computer-window-back" class="computer-window-nav hidden" aria-label="رجوع">‹</button>
+      <button id="computer-window-close" class="computer-window-nav hidden" aria-label="إغلاق">✕</button>
+    </div>
+
+    <!-- ===================== ROOM 4 (стена с дверью, тумбочкой и доской) ===================== -->
+    <div id="scene-room4" class="screen">
+      <img class="full" src="assets/img/room4/wall4.webp?v=1" alt="">
+      <img class="full" src="assets/img/room4/door-closed.webp?v=1" alt="">
+      <img class="full" src="assets/img/room4/board-empty.webp?v=1" alt="">
+      <img class="full" src="assets/img/room4/board-sticker-1.webp?v=1" alt="">
+      <img class="full" src="assets/img/room4/board-sticker-2.webp?v=1" alt="">
+      <img class="full" src="assets/img/room4/board-sticker-3.webp?v=1" alt="">
+      <img class="full" src="assets/img/room4/board-sticker-4.webp?v=1" alt="">
+      <img class="full" src="assets/img/room4/board-sticker-5.webp?v=1" alt="">
+      <img id="tumbochka-img" class="full" src="assets/img/room4/tumbochka-closed.webp?v=1" alt="">
+      <img id="compas-on-tumbochka-img" class="full" src="assets/img/room4/compas-on-tumbochka.webp?v=1" alt="">
+      <img id="carpet-placed-img" class="full hidden" src="assets/img/room4/carpet-w.webp?v=1" alt="">
+
+      <button id="hit-board" class="hit"></button>
+      <button id="hit-tumbochka-top" class="hit"></button>
+      <button id="hit-tumbochka-drawer" class="hit"></button>
+      <button id="hit-carpet-drop" class="hit"></button>
+
+      <button id="hit-room4-to-room3" class="side-nav left">›</button>
+      <button id="hit-room4-to-room" class="side-nav right">‹</button>
+
+      <img id="nor-room4-img" class="hidden" src="assets/img/redress/redress-6.webp?v=1" alt="">
+      <div id="room4-dialogue" class="hidden">
+        <div id="room4-dialogue-bubble">
+          <p id="room4-dialogue-text"></p>
+          <span id="room4-dialogue-tail"></span>
+          <button id="room4-dialogue-skip" class="dialogue-skip-btn">تخطي</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== КРУПНЫЙ ПЛАН: ЯЩИК ТУМБОЧКИ ===================== -->
+    <div id="scene-tumbochka-drawer" class="screen">
+      <button class="back-btn" data-back-tumbochka-drawer>‹</button>
+      <img class="full" src="assets/img/room4/tumbochka-opened-closeup.webp?v=1" alt="">
+      <img id="carpet-img" class="full" src="assets/img/room4/carpet-in-tumbochka.webp?v=1" alt="">
+      <button id="hit-carpet" class="hit"></button>
+    </div>
+
+    <!-- ===================== КРУПНЫЙ ПЛАН: ВЕРХ ТУМБОЧКИ ===================== -->
+    <div id="scene-tumbochka-top" class="screen">
+      <button class="back-btn" data-back-tumbochka-top>‹</button>
+      <img class="full" src="assets/img/room4/tumbochka-top.webp?v=1" alt="">
+      <img id="compas-big-img" class="full" src="assets/img/room4/compas-big.webp?v=1" alt="">
+      <button id="hit-compas-big" class="hit"></button>
+    </div>
+
+    <!-- ===================== КРУПНЫЙ ПЛАН: ДОСКА ===================== -->
+    <div id="scene-board" class="screen">
+      <button class="back-btn" data-back-board>‹</button>
+      <div id="board-closeup-wrap">
+        <img class="full" src="assets/img/room4/board-empty.webp?v=1" alt="">
+        <img class="full" src="assets/img/room4/board-sticker-1.webp?v=1" alt="">
+        <img class="full" src="assets/img/room4/board-sticker-2.webp?v=1" alt="">
+        <img class="full" src="assets/img/room4/board-sticker-3.webp?v=1" alt="">
+        <img class="full" src="assets/img/room4/board-sticker-4.webp?v=1" alt="">
+        <img class="full" src="assets/img/room4/board-sticker-5.webp?v=1" alt="">
+        <button id="hit-board-sticker-1" class="hit"></button>
+        <button id="hit-board-sticker-2" class="hit"></button>
+        <button id="hit-board-sticker-3" class="hit"></button>
+        <button id="hit-board-sticker-4" class="hit"></button>
+        <button id="hit-board-sticker-5" class="hit"></button>
+      </div>
+    </div>
+
+    <div id="sticker-lightbox" class="hidden">
+      <img id="sticker-lightbox-img" src="" alt="">
     </div>
 
     <!-- ===================== خزانة الملابس (تكبير) ===================== -->
     <div id="scene-wardrobe" class="screen">
       <button class="back-btn" data-back-wardrobe>‹</button>
-      <img class="full" src="assets/img/room2/wardrobe-closeup.png?v=3" alt="">
-      <img id="hijab-img" src="assets/img/room2/hijab-item.png?v=1" alt="">
-      <img id="dress-img" src="assets/img/room2/dress-item.png?v=1" alt="">
-      <img id="socks-img" src="assets/img/room2/socks-item.png?v=1" alt="">
+      <img class="full" src="assets/img/room2/wardrobe-closeup.webp?v=4" alt="">
+      <img id="hijab-img" src="assets/img/room2/hijab-item.webp?v=1" alt="">
+      <img id="dress-img" src="assets/img/room2/dress-item.webp?v=1" alt="">
+      <img id="socks-img" src="assets/img/room2/socks-item.webp?v=1" alt="">
       <button id="hit-hijab" class="hit"></button>
       <button id="hit-dress" class="hit"></button>
       <button id="hit-socks" class="hit"></button>
     </div>
 
+    <!-- ===================== КРУПНЫЙ ПЛАН ЗЕРКАЛА ===================== -->
+    <div id="scene-mirror" class="screen">
+      <button class="back-btn" data-back-mirror>‹</button>
+      <img class="full" src="assets/img/room2/mirror-closeup.webp?v=1" alt="">
+      <button id="hit-booklet-closeup" class="hit"></button>
+    </div>
+
     <!-- ===================== الحمام ===================== -->
     <div id="scene-bath" class="screen">
-      <img id="bath-img" class="full" src="assets/img/room2/bath-no-nor.png?v=2" alt="">
-      <img id="cardkit-bath-prop" class="full hidden" src="assets/img/room2/cardkit-in-bath.png?v=1" alt="">
+      <img id="bath-img" class="full" src="assets/img/room2/bath-no-nor.jpg?v=1" alt="">
+      <img id="cardkit-bath-prop" class="full hidden" src="assets/img/room2/cardkit-in-bath.webp?v=2" alt="">
       <button id="hit-bath-door" class="hit"></button>
       <button id="hit-cards" class="hit"></button>
 
@@ -151,6 +292,7 @@
         <div id="bath-dialogue-bubble">
           <p id="bath-dialogue-text"></p>
           <span id="bath-dialogue-tail"></span>
+          <button id="bath-dialogue-skip" class="dialogue-skip-btn">تخطي</button>
         </div>
       </div>
     </div>
@@ -159,7 +301,7 @@
     <div id="scene-cards" class="screen">
       <button class="back-btn" data-back-cards>‹</button>
       <div id="board-frame"></div>
-      <img id="cards-locked-img" src="assets/img/room2/cards/cardkit-bg.png?v=1" alt="">
+      <img id="cards-locked-img" src="assets/img/room2/cards/cardkit-bg.webp?v=2" alt="">
       <div id="card-slots"></div>
       <div id="card-arrows"></div>
       <div id="card-layer"></div>
@@ -169,6 +311,7 @@
         <div id="cards-dialogue-bubble">
           <p id="cards-dialogue-text"></p>
           <span id="cards-dialogue-tail"></span>
+          <button id="cards-dialogue-skip" class="dialogue-skip-btn">تخطي</button>
         </div>
       </div>
 
@@ -183,16 +326,43 @@
 
     <!-- ===================== مشهد الوضوء (تقطيع cut scene.PNG) ===================== -->
     <div id="scene-cutscene" class="screen">
-      <img class="cutscene-frame active" id="cutscene-1" src="assets/img/cutscene/cutscene-1.png?v=1" alt="">
-      <img class="cutscene-frame" id="cutscene-2" src="assets/img/cutscene/cutscene-2.png?v=1" alt="">
-      <img class="cutscene-frame" id="cutscene-3" src="assets/img/cutscene/cutscene-3.png?v=1" alt="">
-      <img class="cutscene-frame" id="cutscene-4" src="assets/img/cutscene/cutscene-4.png?v=1" alt="">
+      <img class="cutscene-frame active" id="cutscene-1" src="assets/img/cutscene/cutscene-1.webp?v=1" alt="">
+      <img class="cutscene-frame" id="cutscene-2" src="assets/img/cutscene/cutscene-2.webp?v=1" alt="">
+      <img class="cutscene-frame" id="cutscene-3" src="assets/img/cutscene/cutscene-3.webp?v=1" alt="">
+      <img class="cutscene-frame" id="cutscene-4" src="assets/img/cutscene/cutscene-4.webp?v=1" alt="">
+      <button id="cutscene-skip" class="cutscene-skip-btn">تخطي</button>
+    </div>
+
+    <!-- ===================== مشهد البداية (تقطيع Start of the game.png) ===================== -->
+    <div id="scene-intro" class="screen">
+      <img class="cutscene-frame active" id="intro-frame-1" src="assets/img/intro/intro-1.jpg?v=2" alt="">
+      <img class="cutscene-frame" id="intro-frame-2" src="assets/img/intro/intro-2.jpg?v=2" alt="">
+      <img class="cutscene-frame" id="intro-frame-3" src="assets/img/intro/intro-3.jpg?v=2" alt="">
+      <img class="cutscene-frame" id="intro-frame-4" src="assets/img/intro/intro-4.jpg?v=2" alt="">
+      <div id="intro-dim"></div>
+      <button id="intro-play-btn">العب</button>
+      <button id="intro-yes-btn" class="hit hidden" aria-label="نعم"></button>
     </div>
 
     <!-- ===================== الحقيبة (فوق كل الشاشات) ===================== -->
     <div id="inventory-wrap">
       <button id="inventory-toggle" aria-label="الحقيبة">▲</button>
       <div id="inventory-bar"></div>
+    </div>
+
+    <div id="hints-wrap" class="hidden">
+      <button id="hints-toggle" title="تلميحات">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18h6"/>
+          <path d="M10 21h4"/>
+          <path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.2 1 2.1h5c0-.9.4-1.65 1-2.1A6 6 0 0 0 12 3Z"/>
+        </svg>
+      </button>
+      <div id="hints-bar">
+        <div class="hint-slot" id="hint-slot-kibla"></div>
+        <div class="hint-slot" id="hint-slot-compass"></div>
+        <div class="hint-slot" id="hint-slot-3"></div>
+      </div>
     </div>
 
     <div id="lang-wrap">
@@ -236,34 +406,38 @@
 <audio preload="auto" id="audio-bathroom-amb" src="assets/audio/bathroom.mp3" loop></audio>
 <audio preload="auto" id="audio-narrator-clock" src="assets/audio/narrator-clock.mp3"></audio>
 <audio preload="auto" id="audio-narrator-cards" src="assets/audio/narrator-cards.mp3"></audio>
-<audio preload="auto" id="audio-nasheed" src="assets/audio/nasheed_1.mp3" loop></audio>
+<audio preload="auto" id="audio-nasheed" src="assets/audio/nasheed_1.m4a?v=1" loop></audio>
 <audio preload="auto" id="audio-narrator-reset" src="assets/audio/narrator-reset.mp3"></audio>
-<audio preload="auto" id="audio-nor10" src="assets/audio/nor10.mp3"></audio>
-<audio preload="auto" id="audio-nor1" src="assets/audio/nor1.mp3"></audio>
-<audio preload="auto" id="audio-nor2" src="assets/audio/nor2.mp3"></audio>
-<audio preload="auto" id="audio-nor3" src="assets/audio/nor3.mp3"></audio>
-<audio preload="auto" id="audio-nor4" src="assets/audio/nor4.mp3"></audio>
-<audio preload="auto" id="audio-nor5" src="assets/audio/nor5.mp3"></audio>
-<audio preload="auto" id="audio-nor6" src="assets/audio/nor6.mp3"></audio>
-<audio preload="auto" id="audio-nor7" src="assets/audio/nor7.mp3"></audio>
-<audio preload="auto" id="audio-nor8" src="assets/audio/nor8.mp3"></audio>
-<audio preload="auto" id="audio-nor9" src="assets/audio/nor9.mp3"></audio>
+<audio preload="auto" id="audio-narrator-intro-1" src="assets/audio/narrator-intro-1.mp3?v=1"></audio>
+<audio preload="auto" id="audio-narrator-intro-2" src="assets/audio/narrator-intro-2.mp3?v=1"></audio>
+<audio preload="auto" id="audio-narrator-intro-3" src="assets/audio/narrator-intro-3.mp3?v=1"></audio>
+<audio preload="auto" id="audio-narrator-intro-4" src="assets/audio/narrator-intro-4.mp3?v=1"></audio>
+<audio preload="auto" id="audio-nor10" src="assets/audio/nor10.m4a"></audio>
+<audio preload="auto" id="audio-nor1" src="assets/audio/nor1.m4a"></audio>
+<audio preload="auto" id="audio-nor2" src="assets/audio/nor2.m4a"></audio>
+<audio preload="auto" id="audio-nor3" src="assets/audio/nor3.m4a"></audio>
+<audio preload="auto" id="audio-nor4" src="assets/audio/nor4.m4a"></audio>
+<audio preload="auto" id="audio-nor5" src="assets/audio/nor5.m4a"></audio>
+<audio preload="auto" id="audio-nor6" src="assets/audio/nor6.m4a"></audio>
+<audio preload="auto" id="audio-nor7" src="assets/audio/nor7.m4a"></audio>
+<audio preload="auto" id="audio-nor8" src="assets/audio/nor8.m4a"></audio>
+<audio preload="auto" id="audio-nor9" src="assets/audio/nor9.m4a"></audio>
 <audio preload="auto" id="audio-clock-loop" src="assets/audio/clocks.mp3"></audio>
 <audio preload="auto" id="audio-buttonclick" src="assets/audio/buttonclick.wav"></audio>
-<audio preload="auto" id="audio-puzzlesolved" src="assets/audio/puzzlesolved.wav"></audio>
-<audio preload="auto" id="audio-door" src="assets/audio/door.wav?v=2"></audio>
-<audio preload="auto" id="audio-wardrobe" src="assets/audio/wardrobe.wav?v=2"></audio>
+<audio preload="auto" id="audio-puzzlesolved" src="assets/audio/puzzlesolved.m4a?v=1"></audio>
+<audio preload="auto" id="audio-door" src="assets/audio/door.m4a?v=1"></audio>
+<audio preload="auto" id="audio-wardrobe" src="assets/audio/wardrobe.m4a?v=1"></audio>
 <audio preload="auto" id="audio-cardshuffle" src="assets/audio/cardshuffling.mp3"></audio>
 <audio preload="auto" id="audio-move" src="assets/audio/move.mp3"></audio>
-<audio preload="auto" id="audio-backtoinv" src="assets/audio/backtoinventory.wav"></audio>
-<audio preload="auto" id="audio-water-valve" src="assets/audio/water-valve.wav"></audio>
-<audio preload="auto" id="audio-water-in-sink" src="assets/audio/water-in-sink.wav"></audio>
+<audio preload="auto" id="audio-backtoinv" src="assets/audio/backtoinventory.m4a?v=1"></audio>
+<audio preload="auto" id="audio-water-valve" src="assets/audio/water-valve.m4a?v=1"></audio>
+<audio preload="auto" id="audio-water-in-sink" src="assets/audio/water-in-sink.m4a?v=1"></audio>
 <audio preload="auto" id="audio-faucet-sink" src="assets/audio/faucet-sink.mp3"></audio>
 <audio preload="auto" id="audio-drops" src="assets/audio/drops.mp3"></audio>
 <audio preload="auto" id="audio-claps" src="assets/audio/claps.mp3"></audio>
 <audio preload="auto" id="audio-towel" src="assets/audio/towel.mp3"></audio>
 <audio preload="auto" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
 
-<script src="game.js?v=59"></script>
+<script src="game.js?v=150"></script>
 </body>
 </html>

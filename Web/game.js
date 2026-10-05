@@ -108,6 +108,15 @@ const state = {
   cardsSolved: false,
   norLeftBath: false, // true once the wash cutscene finishes — Nor has stepped out
   norOutfitStage: 0, // how many NOR_OUTFIT_SEQUENCE steps she's dressed so far, in order
+  readyForNamaz: false, // true once she's fully dressed and said it's time to pray — unlocks room3/room4
+  norRoom4Shown: false, // true once Nor has appeared by the door in room4 after the carpet was found
+  carpetPlaced: false, // true once the carpet has been dragged onto the floor between the door and the nightstand
+  hintsFound: { kibla: false, compass: false }, // which of the 3 direction hints the player has already seen
+  computerOn: false, // toggled by the power button — reflected on both the far view and the closeup
+  videoOpened: false, // true once the correct search result has been picked, opening the compass video
+  searchOpened: false, // true once the internet icon has been clicked, showing the search bar
+  compassHintGiven: false, // true once Nor has said she needs to look up how the compass works
+  compassOpenLineDone: false, // true once Nor has said "now you can open the compass" after both hints were found
   inventory: [],
   talking: false,
 };
@@ -122,7 +131,9 @@ const SAVE_KEY = 'barakatovo-progress-v1';
 const SAVED_FIELDS = [
   'hour', 'minute', 'clockCorrect', 'window', 'bed', 'norAwake',
   'norGreeted', 'norSeenInBath', 'cardsSolved', 'norLeftBath',
-  'norOutfitStage', 'inventory',
+  'norOutfitStage', 'readyForNamaz', 'inventory', 'norRoom4Shown',
+  'carpetPlaced', 'hintsFound', 'computerOn', 'videoOpened', 'searchOpened',
+  'compassHintGiven', 'compassOpenLineDone',
 ];
 
 function saveProgress() {
@@ -152,22 +163,76 @@ function loadProgress() {
 // redresses Nor to whatever sprite matches her saved outfit stage, without
 // replaying any of the dressing dialogue/audio
 function redressSrcForStage(stage) {
-  if (stage <= 0) return 'assets/img/redress/redress-1.png?v=1';
+  if (stage <= 0) return 'assets/img/redress/redress-1.webp?v=1';
   const itemId = NOR_OUTFIT_SEQUENCE[stage - 1];
   return NOR_OUTFIT_STEPS[itemId].src;
+}
+
+// world sprite + hit button for every item collectItem() can pick up, so a
+// restored save can hide whatever's already in the inventory (otherwise the
+// item's picture sits back in the room looking uncollected after a reload
+// or a language switch, even though it's already in the inventory bar)
+const ITEM_WORLD_ELEMENTS = {
+  hijab: { imgElId: 'hijab-img', hitElId: 'hit-hijab' },
+  dress: { imgElId: 'dress-img', hitElId: 'hit-dress' },
+  socks: { imgElId: 'socks-img', hitElId: 'hit-socks' },
+  bag: { imgElId: 'bag-img', hitElId: 'hit-bag' },
+  boots: { imgElId: 'boots-img', hitElId: 'hit-boots' },
+  carpet: { imgElId: 'carpet-img', hitElId: 'hit-carpet' },
+  // the compass also sits in plain view on top of the nightstand in the
+  // room4 wide shot, not just the tumbochka-top closeup — both need to
+  // disappear once it's collected, and stay gone after a reload
+  compass: { imgElId: 'compas-big-img', hitElId: 'hit-compas-big', extraImgElId: 'compas-on-tumbochka-img' },
+};
+
+function hideWorldSprite(id) {
+  const spot = ITEM_WORLD_ELEMENTS[id];
+  if (!spot) return;
+  const itemImg = el(spot.imgElId);
+  if (itemImg) itemImg.style.opacity = '0';
+  const hitBtn = el(spot.hitElId);
+  if (hitBtn) hitBtn.classList.add('hidden');
+  if (spot.extraImgElId) {
+    const extraImg = el(spot.extraImgElId);
+    if (extraImg) extraImg.style.opacity = '0';
+  }
+}
+
+function restoreCollectedItemSprites() {
+  state.inventory.forEach(({ id }) => hideWorldSprite(id));
+  // worn clothes leave the inventory (removeInventoryItem), but their
+  // wardrobe sprite must stay gone too — otherwise reloading the page (or
+  // switching language, which reloads a fresh copy of the page) brings
+  // already-worn items back into view in the wardrobe
+  NOR_OUTFIT_SEQUENCE.forEach((id, i) => {
+    if (i < state.norOutfitStage) hideWorldSprite(id);
+  });
 }
 
 // re-derives every visual from the restored state — always resumes on the
 // room screen (the stable hub) rather than mid-puzzle or mid-animation
 function applyLoadedState() {
+  // a carpet still sitting in the inventory can't have been placed yet
+  if (state.inventory.some(it => it.id === 'carpet')) state.carpetPlaced = false;
   updateBedSprite();
   updateWindowVisual();
   updateClockVisuals();
+  updateClockIconHands();
   renderInventory();
+  restoreCollectedItemSprites();
+  updateRoom4Access();
+
+  // a restored save means the "puzzle just solved" celebration already
+  // happened in an earlier session — from now on the tick-tock should only
+  // ever resume quietly in the background, never replay at full volume
+  if (state.clockCorrect) {
+    state.clockLoopBg = true;
+    el('audio-clock-loop').volume = dbToVol(-20);
+  }
 
   if (state.norAwake) {
     wakeNor();
-    if (state.norSeenInBath) {
+    if (state.norGreeted) {
       el('nor-box').classList.add('hidden');
       el('hit-nor').classList.add('hidden');
     }
@@ -179,14 +244,91 @@ function applyLoadedState() {
     el('nor-redress-img').src = redressSrcForStage(state.norOutfitStage);
     el('nor-redress-img').classList.remove('hidden');
   }
+
+  if (state.norRoom4Shown) {
+    el('nor-redress-img').classList.add('hidden');
+    el('nor-room4-img').classList.remove('hidden');
+  }
+
+  if (state.carpetPlaced) {
+    el('carpet-placed-img').classList.remove('hidden');
+    el('hints-wrap').classList.remove('hidden');
+  }
+
+  updateComputerVisual();
+
+  updateHintsUI();
 }
 
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  // the inventory only stays hidden on the opening cutscene; any other screen (e.g. a debug jump) brings it back
+  if (name !== 'intro') el('inventory-wrap').classList.remove('hidden');
   el('scene-' + name).classList.add('active');
   updateClockLoopForScreen(name);
   updateBathAmbience(name);
   saveProgress();
+  const wall = COMPASS_WALL_OF_SCREEN[name];
+  if (wall) {
+    compassWall = wall;
+    updateCompassImage();
+  }
+  if (name === 'room4') setTimeout(maybePlayCompassOpenLine, 400);
+}
+
+// once both direction hints are known and the player is back in the room view
+// where Nor stands, she says by herself that the compass can be opened now;
+// waits for any line she is still speaking, and only ever happens once
+// the compass needle follows which wall of the room the player is facing:
+// room4 (door wall) faces west, then turning right: room (bed) north,
+// room2 east, room3 south — each wall has its own drawing
+const COMPASS_BY_WALL = {
+  room: 'assets/img/room4/compass-room.webp?v=1',
+  room2: 'assets/img/room4/compass-room2.webp?v=1',
+  room3: 'assets/img/room4/compass-room3.webp?v=1',
+  room4: 'assets/img/room4/compass-room4.webp?v=1',
+};
+Object.values(COMPASS_BY_WALL).forEach(src => { new Image().src = src; });
+// closeups and side rooms keep the compass of the wall they belong to, so
+// jumping straight into one (or leaving the bathroom) never shows a wrong needle
+const COMPASS_WALL_OF_SCREEN = {
+  room: 'room', window: 'room', clock: 'room', schedule: 'room',
+  room2: 'room2', wardrobe: 'room2', mirror: 'room2', bath: 'room2', cards: 'room2',
+  room3: 'room3', computer: 'room3',
+  room4: 'room4', board: 'room4', 'tumbochka-drawer': 'room4', 'tumbochka-top': 'room4',
+};
+let compassWall = 'room4';
+function updateCompassImage() {
+  el('compass-overlay-img').src = COMPASS_BY_WALL[compassWall];
+}
+let compassOverlayOpenedAt = 0;
+function openCompassOverlay() {
+  playSfx(el('audio-move'), -12);
+  compassOverlayOpenedAt = Date.now();
+  updateCompassImage();
+  el('compass-overlay').classList.remove('hidden');
+}
+el('compass-overlay-img').addEventListener('click', () => {
+  // the tap that picked the compass up also ends with a click — ignore it
+  if (Date.now() - compassOverlayOpenedAt < 400) return;
+  playSfx(el('audio-move'), -12);
+  el('compass-overlay').classList.add('hidden');
+});
+
+function maybePlayCompassOpenLine() {
+  if (state.compassOpenLineDone) return;
+  if (!state.hintsFound.kibla || !state.hintsFound.compass) return;
+  if (!state.norRoom4Shown) return;
+  if (document.querySelector('.screen.active').id !== 'scene-room4') return;
+  if (!el('room4-dialogue').classList.contains('hidden')) {
+    setTimeout(maybePlayCompassOpenLine, 800);
+    return;
+  }
+  state.compassOpenLineDone = true;
+  saveProgress();
+  const text = 'Теперь можно открыть компас.';
+  playRoom4Dialogue(text, el('audio-nor32'));
+  lastRoom4Line = { text, audioId: 'audio-nor32' };
 }
 
 // ambient bathroom loop: plays across the whole wudu experience (bath, cards,
@@ -231,7 +373,20 @@ function flashHint(text, duration = 2200) {
 
 // ---------------- dialogue ----------------
 
+const NOR_IDLE_SRC = 'assets/img/redress/redress-1.webp?v=1';
+
+// tracks whichever playLine() is currently talking, so a second tap on Nor
+// can cut it short instead of only ever blocking while state.talking is true
+let currentLineAudio = null;
+let currentLineFinish = null;
+
+// whichever dialogue box anywhere in the game is currently showing/talking —
+// starting any new line (from this box or any other) stops this one first,
+// so lines never overlap each other
+let activeDialogueStop = null;
+
 function playLine(audioEl, text, pose) {
+  if (activeDialogueStop) activeDialogueStop();
   state.talking = true;
   if (pose) el('nor-img').src = pose;
   el('dialogue').classList.remove('hidden');
@@ -244,19 +399,33 @@ function playLine(audioEl, text, pose) {
   const finish = () => {
     state.talking = false;
     el('dialogue').classList.add('hidden');
-    el('nor-img').src = 'assets/img/nor/neutral-v2.png';
+    el('nor-img').src = NOR_IDLE_SRC;
     audioEl.removeEventListener('ended', finish);
+    currentLineAudio = null;
+    currentLineFinish = null;
+    if (activeDialogueStop === stopCurrentLine) activeDialogueStop = null;
   };
   audioEl.addEventListener('ended', finish);
+  currentLineAudio = audioEl;
+  currentLineFinish = finish;
+  activeDialogueStop = stopCurrentLine;
 }
+
+function stopCurrentLine() {
+  if (!currentLineAudio) return;
+  currentLineAudio.pause();
+  currentLineFinish();
+}
+
+el('dialogue-skip').addEventListener('click', stopCurrentLine);
 
 // ---------------- window ----------------
 
 function updateWindowVisual() {
   const src = {
-    closed: 'assets/img/window/closed-2000.png?v=3',
-    open: 'assets/img/window/open-2000.png?v=3',
-    mosque: 'assets/img/window/mosque-2000.png?v=3',
+    closed: 'assets/img/window/closed-2000.webp?v=4',
+    open: 'assets/img/window/open-2000.webp?v=4',
+    mosque: 'assets/img/window/mosque-2000.webp?v=4',
   }[state.window];
   el('window-img-room').src = src;
   el('window-img-closeup').src = src;
@@ -330,6 +499,19 @@ function updateClockVisuals() {
     String(state.hour).padStart(2, '0') + ' : ' + String(state.minute).padStart(2, '0');
 }
 
+// the little clock icon on the main room screen isn't the puzzle itself, so
+// it only ever shows one of two fixed times — 12:00 before the puzzle is
+// solved, 5:30 (Fajr) after — instead of tracking whatever the child is
+// mid-fiddling with on the closeup screen
+function updateClockIconHands() {
+  // unlike the closeup clock's hand images, these are plain divs pivoted at
+  // their own base, so 0deg already points straight up at 12 — no +180 needed
+  const hourAngle = state.clockCorrect ? (TARGET_HOUR % 12) * 30 + TARGET_MINUTE * 0.5 : 0;
+  const minuteAngle = state.clockCorrect ? TARGET_MINUTE * 6 : 0;
+  document.querySelector('.clock-icon-hand.hour').style.transform = `rotate(${hourAngle}deg)`;
+  document.querySelector('.clock-icon-hand.minute').style.transform = `rotate(${minuteAngle}deg)`;
+}
+
 function tick() {
   playSfx(el('audio-buttonclick'), -8);
   updateClockVisuals();
@@ -340,6 +522,7 @@ function checkClockCorrect() {
   if (!state.clockCorrect && state.hour === TARGET_HOUR && state.minute === TARGET_MINUTE) {
     state.clockCorrect = true;
     updateWindowVisual();
+    updateClockIconHands();
     const badge = el('clock-success');
     badge.classList.remove('hidden');
     badge.style.animation = 'none';
@@ -397,9 +580,9 @@ el('btn-min-left').addEventListener('click', () => { state.minute = (state.minut
 
 function updateBedSprite() {
   const src = {
-    sleeping: 'assets/img/bed/sleeping.png',
-    getup: 'assets/img/bed/getup.png',
-    fixed: 'assets/img/bed/fixed.png',
+    sleeping: 'assets/img/bed/sleeping.webp?v=1',
+    getup: 'assets/img/bed/getup.webp?v=1',
+    fixed: 'assets/img/bed/fixed.webp?v=1',
   }[state.bed];
   el('bed-img').src = src;
 }
@@ -419,7 +602,7 @@ function onBedClicked() {
   playLine(
     el('audio-nor2'),
     'Готово! Так намного уютнее! А ведь Пророк ﷺ сказал: «Чистота — половина веры».',
-    'assets/img/nor/finger-up-v2.png'
+    'assets/img/nor/finger-up-v2.webp?v=1'
   );
 }
 
@@ -427,6 +610,7 @@ function onBedClicked() {
 
 function wakeNor() {
   state.norAwake = true;
+  el('nor-img').src = NOR_IDLE_SRC;
   el('nor-box').classList.remove('hidden');
   el('hit-nor').classList.remove('hidden');
   saveProgress();
@@ -439,7 +623,7 @@ function onNorClicked() {
   playLine(
     el('audio-nor1'),
     'Ас-Саламу Алейкум! Уже наступил Фаджр. Пора сделать омовение, надеть намазник и совершить намаз.',
-    'assets/img/nor/arms-out-v4.png'
+    'assets/img/nor/arms-out-v4.webp?v=1'
   );
 }
 
@@ -463,17 +647,25 @@ let doorBusy = false;
 let wardrobeOpen = false;
 let inventoryDragActive = false; // true while an item ghost is attached to the cursor
 let lastRoom2Line = null; // { text, audioId } of the most recent thing Nor said in room2 — tapping her repeats it
+// while the bag line's follow-up is waiting on its fixed timer, this holds a
+// function that jumps straight to it — skipping the bag line fires it early
+// instead of leaving the player to wait out the rest of the 8s
+let pendingBagFollowUp = null;
 
 // warm the browser's cache/decoder for the big room2/bath images so there's
 // no partial-paint flash the first time each screen is shown
 [
-  'assets/img/room2/door-open.png?v=1',
-  'assets/img/room2/bath-no-nor.png?v=2',
-  'assets/img/room2/bath-nor.png?v=2',
-  'assets/img/room2/wardrobe-open.png?v=1',
-  'assets/img/room2/wardrobe-closeup.png?v=3',
-  'assets/img/room2/cards/cardkit-bg.png?v=1',
-  'assets/img/room2/bath-cards-solved.png?v=1',
+  'assets/img/room2/door-open.webp?v=2',
+  'assets/img/room2/bath-no-nor.jpg?v=1',
+  'assets/img/room2/bath-nor.jpg?v=1',
+  'assets/img/room2/wardrobe-open.webp?v=2',
+  'assets/img/room2/wardrobe-closeup.webp?v=4',
+  'assets/img/room2/cards/cardkit-bg.webp?v=2',
+  'assets/img/room2/bath-cards-solved.webp?v=2',
+  'assets/img/window/open-2000.webp?v=4',
+  'assets/img/window/mosque-2000.webp?v=4',
+  'assets/img/bed/getup.webp?v=1',
+  'assets/img/bed/fixed.webp?v=1',
 ].forEach(src => { new Image().src = src; });
 
 el('hit-to-room2').addEventListener('click', () => {
@@ -488,18 +680,551 @@ el('hit-to-room1').addEventListener('click', () => {
   showScreen('room');
 });
 
+// room3/room4 (and the shortcut back into them from the main room) only
+// open up once Nor is dressed and has said it's time to pray — before that
+// there's nothing there for the player to do
+function updateRoom4Access() {
+  el('hit-room2-to-room3').classList.toggle('hidden', !state.readyForNamaz);
+  el('hit-room-to-room4').classList.toggle('hidden', !state.readyForNamaz);
+}
+
+el('hit-room-to-room4').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('room4');
+});
+
+el('hit-room2-to-room3').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('room3');
+});
+el('hit-room3-to-room2').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('room2');
+});
+el('hit-room3-to-room4').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('room4');
+});
+el('hit-room4-to-room3').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('room3');
+});
+el('hit-room4-to-room').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('room');
+});
+
+// ---------------- room3: computer desk ----------------
+
+// everything besides the compass video that can be opened on the computer
+// screen — icons on the desktop, and the decoy search results
+const COMPUTER_APPS = {
+  study: { type: 'image', src: 'assets/img/room3/apps/study.jpg?v=1', line: '5 — это моя гордость, 4 — это моя мотивация.', audio: 'audio-nor19' },
+  photos: { type: 'menu', items: [
+    { label: 'Фото 1', src: 'assets/img/room3/apps/photo-1.jpg?v=1', line: 'Вот и вся наша семья. Интересно, как мы все уместились в один кадр?', audio: 'audio-nor12' },
+    { label: 'Фото 2', src: 'assets/img/room3/apps/photo-2.jpg?v=1', line: 'Папа тоже умеет помогать. Правда, мама почему-то говорит, что иногда после его помощи работы становится больше.', audio: 'audio-nor13' },
+    { label: 'Фото 3', src: 'assets/img/room3/apps/photo-3.jpg?v=1', line: 'Мы учим Коран всей семьёй. Моя маленькая сестра Мария тоже учит. Правда, пока больше учит нас терпению.', audio: 'audio-nor17' },
+    { label: 'Фото 4', src: 'assets/img/room3/apps/photo-4.jpg?v=1', line: 'Папа и Ясин строят скворечник. Надеюсь, птицы не будут слишком придирчивы к ремонту.', audio: 'audio-nor15' },
+  ] },
+  documents: { type: 'menu', items: [
+    { label: 'Мои заметки', src: 'assets/img/room3/apps/doc-notes.jpg?v=1', line: 'Некоторые вопросы я уже совсем забыла. Хорошо, что я додумалась их записать.', audio: 'audio-nor14' },
+    { label: 'Моя комната', src: 'assets/img/room3/apps/doc-room-map.webp?v=1', line: 'Это моя любимая комната, план сверху. Папа и старший брат Ясин долго спорили, что куда поставить. Но мама сама всё поставила.', audio: 'audio-nor21' },
+  ] },
+};
+const SEARCH_RESULT_APPS = {
+  cats: { type: 'video', src: 'assets/video/cats.mp4?v=2', line: 'Ой, какой милый котик!', audio: 'audio-nor23' },
+  games: { type: 'image', src: 'assets/img/room3/apps/games-blocked.jpg?v=1', line: 'Опять папа придумал новые правила, иногда это немного раздражает, но я принимаю это ради Аллаха. Я понимаю, что он это делает ради меня, чтобы я выросла хорошим человеком.', audio: 'audio-nor20' },
+  weather: { type: 'image', src: 'assets/img/room3/apps/weather.jpg?v=1', line: 'Дождь — это милость от Аллаха.', audio: 'audio-nor22' },
+  cookies: { type: 'image', src: 'assets/img/room3/apps/cookies.jpg?v=1', line: 'МашаАллах! Рецепт печенья! Теперь мне срочно нужно печенье!', audio: 'audio-nor16' },
+};
+
+// true while the generic app window (photos/documents/decoy results) is
+// open — plain UI flag, not saved, same pattern as tumbochkaOpen below
+let computerWindowOpen = false;
+
+// the frame+glow layers are shared between the compass video and every app
+// window — both sit in the exact same screen cutout, so one pair of layers
+// masks all of them and nothing new has to be drawn per picture
+function updateComputerFrameVisibility() {
+  const show = state.computerOn && (state.videoOpened || computerWindowOpen);
+  el('computer-video-frame').classList.toggle('hidden', !show);
+  el('computer-video-top-layer').classList.toggle('hidden', !show);
+}
+
+function openComputerWindow(content) {
+  el('computer-video-wrap').classList.add('hidden');
+  el('computer-video').pause();
+  el('computer-search-wrap').classList.add('hidden');
+  el('computer-search-suggestions').classList.add('hidden');
+  computerWindowOpen = true;
+  el('computer-window').classList.remove('hidden');
+  el('computer-window-close').classList.remove('hidden');
+  updateComputerFrameVisibility();
+  if (content.type === 'menu') {
+    showComputerMenu(content.items);
+  } else {
+    showComputerContent(content);
+  }
+}
+
+function showComputerMenu(items) {
+  const menu = el('computer-window-menu');
+  menu.innerHTML = '';
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'computer-window-menu-item';
+    btn.textContent = item.label;
+    btn.addEventListener('click', () => showComputerContent(item, items));
+    menu.appendChild(btn);
+  });
+  menu.classList.remove('hidden');
+  el('computer-window-image').classList.add('hidden');
+  el('computer-window-video').classList.add('hidden');
+  el('computer-window-video').pause();
+  el('computer-window-back').classList.add('hidden');
+  stopRoom3Dialogue();
+}
+
+// video content (the cats decoy) only plays its line once the video is
+// actually started, not the instant the window opens — everything else
+// speaks right away
+let computerVideoDialogue = null;
+
+function showComputerContent(item, parentItems) {
+  el('computer-window-menu').classList.add('hidden');
+  if (item.type === 'video') {
+    el('computer-window-video').src = item.src;
+    el('computer-window-video').classList.remove('hidden');
+    el('computer-window-image').classList.add('hidden');
+    computerVideoDialogue = item.line ? { text: item.line, audioId: item.audio } : null;
+  } else {
+    el('computer-window-image').src = item.src;
+    el('computer-window-image').classList.remove('hidden');
+    el('computer-window-video').classList.add('hidden');
+    el('computer-window-video').pause();
+    computerVideoDialogue = null;
+  }
+  el('computer-window-back').classList.toggle('hidden', !parentItems);
+  if (parentItems) {
+    el('computer-window-back').onclick = () => showComputerMenu(parentItems);
+  }
+  if (item.type !== 'video') {
+    if (item.line) {
+      playRoom3Dialogue(item.line, item.audio ? el(item.audio) : null);
+    } else {
+      stopRoom3Dialogue();
+    }
+  }
+}
+el('computer-window-video').addEventListener('play', () => {
+  if (computerVideoDialogue) {
+    playRoom3Dialogue(computerVideoDialogue.text, computerVideoDialogue.audioId ? el(computerVideoDialogue.audioId) : null);
+  }
+});
+
+function playRoom3Dialogue(text, audioEl) {
+  if (activeDialogueStop) activeDialogueStop();
+  const box = el('room3-dialogue');
+  el('room3-dialogue-text').textContent = text;
+  box.classList.remove('hidden');
+  clearTimeout(playRoom3Dialogue._t);
+  if (audioEl) {
+    routeToMaster(audioEl, true);
+    audioEl.currentTime = 0;
+    audioEl.volume = dbToVol(0);
+    audioEl.play();
+    const finish = () => {
+      box.classList.add('hidden');
+      audioEl.removeEventListener('ended', finish);
+      playRoom3Dialogue._stop = null;
+      if (activeDialogueStop === stopRoom3Dialogue) activeDialogueStop = null;
+    };
+    audioEl.addEventListener('ended', finish);
+    playRoom3Dialogue._stop = () => { audioEl.pause(); finish(); };
+  } else {
+    playRoom3Dialogue._stop = null;
+    playRoom3Dialogue._t = setTimeout(() => {
+      box.classList.add('hidden');
+      if (activeDialogueStop === stopRoom3Dialogue) activeDialogueStop = null;
+    }, 8000);
+  }
+  activeDialogueStop = stopRoom3Dialogue;
+}
+function stopRoom3Dialogue() {
+  clearTimeout(playRoom3Dialogue._t);
+  if (playRoom3Dialogue._stop) playRoom3Dialogue._stop();
+  else el('room3-dialogue').classList.add('hidden');
+  if (activeDialogueStop === stopRoom3Dialogue) activeDialogueStop = null;
+}
+el('room3-dialogue-skip').addEventListener('click', stopRoom3Dialogue);
+
+function closeComputerWindow() {
+  computerWindowOpen = false;
+  el('computer-window').classList.add('hidden');
+  el('computer-window-back').classList.add('hidden');
+  el('computer-window-close').classList.add('hidden');
+  el('computer-window-video').pause();
+  stopRoom3Dialogue();
+  updateComputerFrameVisibility();
+}
+
+// reflects state.computerOn/state.searchOpened/state.videoOpened onto both
+// the far view and the closeup — called on toggle and on save restore, so
+// the views can never disagree about whether the computer is on
+function updateComputerVisual() {
+  const on = state.computerOn;
+  el('computer-far-img').src = on
+    ? 'assets/img/room3/computer-on-far.webp?v=1'
+    : 'assets/img/room3/computer-off-far.webp?v=1';
+  el('computer-closeup-img').src = on
+    ? 'assets/img/room3/computer-on-closeup.webp?v=1'
+    : 'assets/img/room3/computer-off-closeup.webp?v=1';
+  el('computer-icons-img').classList.toggle('hidden', !on);
+  el('computer-internet-icon-img').classList.toggle('hidden', !on);
+  el('hit-internet-icon').classList.toggle('hidden', !on);
+  el('hit-icon-study').classList.toggle('hidden', !on);
+  el('hit-icon-koran').classList.toggle('hidden', !on);
+  el('hit-icon-photos').classList.toggle('hidden', !on);
+  el('hit-icon-documents').classList.toggle('hidden', !on);
+  const showVideo = on && state.videoOpened;
+  const showSearch = on && state.searchOpened && !state.videoOpened;
+  // the compass video, the search bar and any app window all live in the
+  // same screen rect — showing one always means closing the other two
+  if (!on || showVideo || showSearch) closeComputerWindow();
+  el('computer-video-wrap').classList.toggle('hidden', !showVideo);
+  if (showVideo) {
+    // while paused (whether never started, or finished and offering a
+    // replay) the video's own frame would hide the splash card behind it
+    if (el('computer-video').paused) {
+      el('computer-video').classList.add('computer-video-ended-hide');
+    }
+    revealVideoPlayButton();
+  } else {
+    el('computer-video').pause();
+    el('computer-video-play').classList.add('hidden');
+  }
+  el('computer-search-wrap').classList.toggle('hidden', !showSearch);
+  if (!showSearch) el('computer-search-suggestions').classList.add('hidden');
+  // the video and the search page can both be closed back to the plain desktop
+  el('computer-view-close').classList.toggle('hidden', !(showVideo || showSearch));
+  updateComputerFrameVisibility();
+}
+
+// the play button only appears once the video actually has a frame ready to
+// show — revealing it immediately could leave the child tapping a button
+// that does nothing yet while the file is still loading
+function revealVideoPlayButton() {
+  const video = el('computer-video');
+  const show = () => {
+    if (video.ended) {
+      setVideoReplayIcon();
+    } else {
+      setVideoPlayIcon();
+    }
+    el('computer-video-play').classList.remove('hidden');
+  };
+  if (video.readyState >= 2) {
+    show();
+  } else {
+    video.addEventListener('canplay', show, { once: true });
+  }
+}
+
+function setVideoPlayIcon() {
+  el('computer-video-play').innerHTML =
+    '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+}
+function setVideoReplayIcon() {
+  el('computer-video-play').innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
+}
+
+el('hit-computer').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('computer');
+});
+document.querySelectorAll('[data-back-computer]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    playSfx(el('audio-move'), -12);
+    el('computer-video').pause();
+    closeComputerWindow();
+    showScreen('room3');
+  })
+);
+el('hit-computer-power').addEventListener('click', () => {
+  if (state.talking) return;
+  state.computerOn = !state.computerOn;
+  if (!state.computerOn) {
+    state.videoOpened = false;
+    state.searchOpened = false;
+  }
+  playSfx(el('audio-buttonclick'), -8);
+  updateComputerVisual();
+  saveProgress();
+});
+el('hit-internet-icon').addEventListener('click', () => {
+  if (state.talking || !state.computerOn) return;
+  state.searchOpened = true;
+  playSfx(el('audio-move'), -12);
+  updateComputerVisual();
+  saveProgress();
+});
+el('computer-search-bar').addEventListener('click', () => {
+  // the real answer only shows up once Nor has actually asked the
+  // question — before that the child would have no way to know it
+  el('search-suggestion-compass').classList.toggle('hidden', !state.compassHintGiven);
+  el('computer-search-suggestions').classList.toggle('hidden');
+  playRoom3Dialogue('Я хотела поискать всего одну вещь, а интернет уже успел предложить мне двадцать.', el('audio-nor24'));
+});
+document.querySelectorAll('.search-suggestion').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.correct === 'true') {
+      state.videoOpened = true;
+      playSfx(el('audio-move'), -12);
+      updateComputerVisual();
+      saveProgress();
+      return;
+    }
+    // the decoy results aren't dead ends — each one opens its own content
+    const key = btn.id.replace('search-suggestion-', '');
+    const content = SEARCH_RESULT_APPS[key];
+    if (content) {
+      playSfx(el('audio-move'), -12);
+      openComputerWindow(content);
+    }
+  });
+});
+el('hit-icon-study').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  openComputerWindow(COMPUTER_APPS.study);
+});
+el('hit-icon-koran').addEventListener('click', () => {
+  // no content or line for this one yet
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+});
+el('hit-icon-photos').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  openComputerWindow(COMPUTER_APPS.photos);
+});
+el('hit-icon-documents').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  openComputerWindow(COMPUTER_APPS.documents);
+});
+el('computer-window-close').addEventListener('click', () => {
+  playSfx(el('audio-move'), -12);
+  closeComputerWindow();
+});
+el('computer-view-close').addEventListener('click', () => {
+  state.videoOpened = false;
+  state.searchOpened = false;
+  playSfx(el('audio-move'), -12);
+  stopRoom3Dialogue();
+  updateComputerVisual();
+  saveProgress();
+});
+el('computer-video-play').addEventListener('click', () => {
+  const video = el('computer-video');
+  if (video.ended) video.currentTime = 0;
+  video.classList.remove('computer-video-ended-hide');
+  video.play();
+});
+// the skip button only exists while the video is actually running; it jumps
+// straight to the end, which counts exactly like watching it to the finish
+el('computer-video').addEventListener('pause', () => el('computer-video-skip').classList.add('hidden'));
+el('computer-video-skip').addEventListener('click', () => {
+  const video = el('computer-video');
+  video.pause();
+  video.dispatchEvent(new Event('ended'));
+});
+el('computer-video').addEventListener('play', () => {
+  el('computer-video-skip').classList.remove('hidden');
+  el('computer-video-play').classList.add('hidden');
+  el('computer-video').classList.remove('computer-video-ended-hide');
+});
+el('computer-video').addEventListener('ended', () => {
+  el('computer-video-skip').classList.add('hidden');
+  setVideoReplayIcon();
+  el('computer-video-play').classList.remove('hidden');
+  // the video's own last frame would otherwise stay on screen instead of
+  // the splash card — hide it so the "where to place it" poster shows again
+  el('computer-video').classList.add('computer-video-ended-hide');
+  // watching the compass video to the end counts as finding the second hint
+  if (!state.hintsFound.compass) {
+    state.hintsFound.compass = true;
+    updateHintsUI();
+    playSfx(el('audio-puzzlesolved'), -16);
+    saveProgress();
+    playRoom3Dialogue('Ага, красная стрелка компаса — это север, запомним.', el('audio-nor31'));
+  }
+});
+
+// ---------------- room4: nightstand + board ----------------
+
+let tumbochkaOpen = false;
+el('hit-tumbochka-drawer').addEventListener('click', () => {
+  if (state.talking) return;
+  if (!tumbochkaOpen) {
+    tumbochkaOpen = true;
+    playSfx(el('audio-wardrobe'), -7);
+    el('tumbochka-img').src = 'assets/img/room4/tumbochka-opened.webp?v=1';
+  } else {
+    playSfx(el('audio-move'), -12);
+    showScreen('tumbochka-drawer');
+  }
+});
+document.querySelectorAll('[data-back-tumbochka-drawer]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    playSfx(el('audio-move'), -12);
+    showScreen('room4');
+    if (!state.norRoom4Shown && state.inventory.some(it => it.id === 'carpet')) {
+      state.norRoom4Shown = true;
+      saveProgress();
+      el('nor-redress-img').classList.add('hidden');
+      el('nor-room4-img').classList.remove('hidden');
+      setTimeout(() => {
+        const text = 'Отлично! Коврик найден. Обычно я кладу его между дверью и тумбочкой.';
+        playRoom4Dialogue(text, el('audio-nor25'));
+        lastRoom4Line = { text, audioId: 'audio-nor25' };
+      }, 200);
+    }
+  })
+);
+
+el('hit-tumbochka-top').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('tumbochka-top');
+});
+document.querySelectorAll('[data-back-tumbochka-top]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    playSfx(el('audio-move'), -12);
+    showScreen('room4');
+  })
+);
+
+el('hit-board').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('board');
+});
+document.querySelectorAll('[data-back-board]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    playSfx(el('audio-move'), -12);
+    showScreen('room4');
+    if (kiblaHintPending) {
+      kiblaHintPending = false;
+      state.hintsFound.kibla = true;
+      updateHintsUI();
+      playSfx(el('audio-puzzlesolved'), -16);
+      saveProgress();
+    }
+    if (kiblaWhereSouthPending) {
+      kiblaWhereSouthPending = false;
+      setTimeout(() => {
+        const text = 'Кибла на юг. Так, а где в комнате юг?';
+        playRoom4Dialogue(text, el('audio-nor28'));
+        lastRoom4Line = { text, audioId: 'audio-nor28' };
+      }, 200);
+    }
+  })
+);
+
+// each board sticker opens a bigger, readable version over a dim backdrop;
+// stickers 2 and 3 are both clusters of tiny icons, so they share one zoom
+let kiblaHintPending = false;
+const BOARD_STICKER_ZOOM = {
+  1: 'assets/img/room4/board-zoom-1.webp?v=1',
+  2: 'assets/img/room4/board-zoom-23.webp?v=1',
+  3: 'assets/img/room4/board-zoom-23.webp?v=1',
+  4: 'assets/img/room4/board-zoom-4.jpg?v=1',
+  5: 'assets/img/room4/board-zoom-5.webp?v=1',
+};
+Object.keys(BOARD_STICKER_ZOOM).forEach(n => {
+  el('hit-board-sticker-' + n).addEventListener('click', () => {
+    if (state.talking) return;
+    playSfx(el('audio-move'), -12);
+    el('sticker-lightbox-img').src = BOARD_STICKER_ZOOM[n];
+    el('sticker-lightbox').classList.remove('hidden');
+    // the compass sticker (1) was a gift from Nor's friend; she tells the story
+    if (n === '1') {
+      if (activeDialogueStop) activeDialogueStop();
+      const caption = el('sticker-lightbox-caption');
+      caption.textContent = 'Этот стикер мне подарила моя подруга. МаШаАллах. Она очень красиво рисует и хорошо знает географию.';
+      caption.classList.remove('hidden');
+      const stickerVoice = el('audio-nor29');
+      routeToMaster(stickerVoice, true);
+      stickerVoice.currentTime = 0;
+      stickerVoice.volume = dbToVol(0);
+      stickerVoice.play();
+    }
+    // Nor reads the kibla note aloud (no caption: it is the text written on the note itself)
+    if (n === '4') {
+      if (activeDialogueStop) activeDialogueStop();
+      const kiblaVoice = el('audio-nor27');
+      routeToMaster(kiblaVoice, true);
+      kiblaVoice.currentTime = 0;
+      kiblaVoice.volume = dbToVol(0);
+      kiblaVoice.play();
+    }
+    // the "кибла" note pinned to the board tells the player which way to
+    // face for prayer — seeing it counts as finding the first of 3 hints,
+    // but only once Nor has actually said the hints need finding
+    // the hint itself is only added (and its sound played) once the player
+    // steps back out to the room view — see the board's back button
+    if (n === '4' && state.carpetPlaced && !state.hintsFound.kibla) {
+      kiblaHintPending = true;
+    }
+  });
+});
+
+function updateHintsUI() {
+  const kiblaSlot = el('hint-slot-kibla');
+  kiblaSlot.classList.toggle('filled', !!state.hintsFound.kibla);
+  kiblaSlot.textContent = state.hintsFound.kibla ? 'Кибла на Юг' : '';
+
+  const compassSlot = el('hint-slot-compass');
+  compassSlot.classList.toggle('filled', !!state.hintsFound.compass);
+  compassSlot.textContent = state.hintsFound.compass ? 'Красная стрелка компаса — Север' : '';
+}
+let kiblaWhereSouthPending = false;
+el('sticker-lightbox').addEventListener('click', () => {
+  const wasKibla = el('sticker-lightbox-img').src.includes('board-zoom-4');
+  el('sticker-lightbox').classList.add('hidden');
+  ['audio-nor11', 'audio-nor27', 'audio-nor29'].forEach(id => {
+    const narrator = el(id);
+    narrator.pause();
+    narrator.currentTime = 0;
+  });
+  el('sticker-lightbox-caption').classList.add('hidden');
+  // Nor wonders where south is once the player steps back out to the room view,
+  // but only after she has already told the player about the 3 hints (carpet placed)
+  if (wasKibla && state.carpetPlaced) kiblaWhereSouthPending = true;
+});
+
+
 function updateBathVisual() {
   if (state.norLeftBath) {
-    el('bath-img').src = 'assets/img/room2/bath-no-nor.png?v=2';
+    el('bath-img').src = 'assets/img/room2/bath-no-nor.jpg?v=1';
     el('cardkit-bath-prop').classList.remove('hidden');
     return;
   }
   el('cardkit-bath-prop').classList.add('hidden');
   el('bath-img').src = state.cardsSolved
-    ? 'assets/img/room2/bath-cards-solved.png?v=1'
-    : state.norAwake
-      ? 'assets/img/room2/bath-nor.png?v=2'
-      : 'assets/img/room2/bath-no-nor.png?v=2';
+    ? 'assets/img/room2/bath-cards-solved.webp?v=2'
+    : state.norGreeted
+      ? 'assets/img/room2/bath-nor.jpg?v=1'
+      : 'assets/img/room2/bath-no-nor.jpg?v=1';
 }
 
 el('hit-door').addEventListener('click', () => {
@@ -507,10 +1232,10 @@ el('hit-door').addEventListener('click', () => {
   doorBusy = true;
   playSfx(el('audio-door'), -7);
   updateBathVisual();
-  el('door-img').src = 'assets/img/room2/door-open.png?v=1';
+  el('door-img').src = 'assets/img/room2/door-open.webp?v=2';
   setTimeout(() => {
     showScreen('bath');
-    el('door-img').src = 'assets/img/room2/door-closed.png?v=1';
+    el('door-img').src = 'assets/img/room2/door-closed.webp?v=2';
     doorBusy = false;
     const azan = el('audio-azan');
     if (!azan.paused) {
@@ -522,7 +1247,9 @@ el('hit-door').addEventListener('click', () => {
       nasheed.pause(); // just pauses — resumes from here, not from the start, once back in room2
     }
     // she's been seen in the mirror now — Nor is no longer waiting by the bed
-    if (state.norAwake) {
+    // (only once greeted: otherwise she'd vanish from the room before her
+    // salam-aleikum line ever played, with nowhere to be seen at all)
+    if (state.norGreeted) {
       el('nor-box').classList.add('hidden');
       el('hit-nor').classList.add('hidden');
     }
@@ -550,7 +1277,7 @@ el('hit-wardrobe-drawer').addEventListener('click', () => {
   if (!wardrobeOpen) {
     wardrobeOpen = true;
     playSfx(el('audio-wardrobe'), -7);
-    el('wardrobe-img').src = 'assets/img/room2/wardrobe-open.png?v=1';
+    el('wardrobe-img').src = 'assets/img/room2/wardrobe-open.webp?v=2';
   } else {
     playSfx(el('audio-move'), -12);
     showScreen('wardrobe');
@@ -563,6 +1290,45 @@ document.querySelectorAll('[data-back-wardrobe]').forEach(btn =>
     showScreen('room2');
   })
 );
+
+// ---------------- mirror + wudu booklet ----------------
+
+el('hit-mirror').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('mirror');
+});
+document.querySelectorAll('[data-back-mirror]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    playSfx(el('audio-move'), -12);
+    showScreen('room2');
+  })
+);
+
+function openBooklet() {
+  if (state.talking) return;
+  if (activeDialogueStop) activeDialogueStop();
+  playSfx(el('audio-move'), -12);
+  el('sticker-lightbox-img').src = 'assets/img/room2/wudu-booklet.jpg?v=1';
+  el('sticker-lightbox').classList.remove('hidden');
+  const caption = el('sticker-lightbox-caption');
+  caption.textContent = 'Хорошо, что мама распечатала мне эту памятку. Иногда я забываю порядок омовения.';
+  caption.classList.remove('hidden');
+  const narrator = el('audio-nor11');
+  routeToMaster(narrator, true);
+  narrator.currentTime = 0;
+  narrator.volume = dbToVol(0);
+  narrator.play();
+}
+// the booklet is tucked into the mirror on the wall, but only readable once
+// zoomed in — tapping it on the wall just zooms to the mirror, like tapping
+// the mirror itself; only the closeup's booklet actually opens it
+el('hit-booklet').addEventListener('click', () => {
+  if (state.talking) return;
+  playSfx(el('audio-move'), -12);
+  showScreen('mirror');
+});
+el('hit-booklet-closeup').addEventListener('click', openBooklet);
 
 // ---------------- inventory ----------------
 
@@ -584,6 +1350,11 @@ function buildInventoryUI() {
     playSfx(el('audio-move'), -12);
     el('lang-menu').classList.toggle('hidden');
     el('lang-submenu').classList.add('hidden'); // closed by default each time the menu opens
+  });
+
+  el('hints-toggle').addEventListener('click', () => {
+    playSfx(el('audio-move'), -12);
+    el('hints-bar').classList.toggle('hidden');
   });
 
   el('lang-menu-toggle').addEventListener('click', () => {
@@ -616,6 +1387,7 @@ function setupInventoryDrag() {
   const bar = el('inventory-bar');
   let ghost = null;
   let sourceSlot = null;
+  let activePointerId = null;
 
   function attach(slot, x, y) {
     const img = slot.querySelector('img');
@@ -624,21 +1396,47 @@ function setupInventoryDrag() {
     sourceSlot = slot;
     slot.classList.add('drag-source');
     const rect = img.getBoundingClientRect();
+    const itemId = img.dataset.item;
     ghost = document.createElement('img');
-    ghost.src = img.src;
-    ghost.dataset.item = img.dataset.item;
+    let ghostW = rect.width, ghostH = rect.height;
+    if (itemId === 'carpet') {
+      // the rolled-up icon unfurls into the full prayer rug while dragging
+      ghost.src = 'assets/img/room4/carpet-unrolled.webp?v=1';
+      ghostH = rect.height * 1.6;
+      ghostW = ghostH * (1235 / 1864);
+    } else {
+      ghost.src = img.src;
+    }
+    ghost.dataset.item = itemId;
     ghost.className = 'inv-drag-ghost';
-    ghost.style.width = rect.width + 'px';
-    ghost.style.height = rect.height + 'px';
-    ghost.style.left = (x - rect.width / 2) + 'px';
-    ghost.style.top = (y - rect.height / 2) + 'px';
+    ghost.style.width = ghostW + 'px';
+    ghost.style.height = ghostH + 'px';
+    ghost.style.left = (x - ghostW / 2) + 'px';
+    ghost.style.top = (y - ghostH / 2) + 'px';
     document.body.appendChild(ghost);
+    // the open inventory drawer sits above Nor's feet (z-index-wise) right
+    // where boots naturally get dropped — ignore it as a drop target for
+    // the rest of this drag so the hit-test falls through to her instead
+    el('inventory-wrap').style.pointerEvents = 'none';
   }
 
   // item flies back home on the second click unless it's dropped on a
   // valid target (right now: the right item dropped on Nor dresses her up)
   function flyBack() {
     playSfx(el('audio-backtoinv'), -6);
+    el('inventory-wrap').style.pointerEvents = '';
+    // tapping the compass in the inventory doesn't dress Nor or place
+    // anything — it just makes her think out loud; this line is deliberately
+    // NOT saved as lastRoom4Line, so tapping Nor keeps repeating whatever she
+    // last actually said instead of getting stuck on this aside
+    if (ghost.dataset.item === 'compass' && state.compassOpenLineDone) {
+      // Nor has said the compass can be opened now: tapping it shows it
+      openCompassOverlay();
+    } else if (ghost.dataset.item === 'compass') {
+      playRoom4Dialogue('Я не знаю, как пользоваться компасом. Надо посмотреть в интернете.', el('audio-nor-compass'));
+      state.compassHintGiven = true;
+      saveProgress();
+    }
     const targetImg = sourceSlot.querySelector('img');
     const rect = targetImg.getBoundingClientRect();
     ghost.classList.add('flying-back');
@@ -657,17 +1455,22 @@ function setupInventoryDrag() {
     }, 260);
   }
 
-  function release(target) {
+  function release(x, y) {
     if (!ghost) return;
     const itemId = ghost.dataset.item;
+    const target = document.elementFromPoint(x, y);
     const norImg = el('nor-redress-img');
     const droppedOnNor = norImg && !norImg.classList.contains('hidden') &&
       target && target.closest && target.closest('#nor-redress-img');
 
     if (droppedOnNor && NOR_OUTFIT_STEPS[itemId] && outfitStepAllowed(itemId)) {
+      el('inventory-wrap').style.pointerEvents = '';
       norImg.src = NOR_OUTFIT_STEPS[itemId].src;
       state.norOutfitStage++;
-      playSfx(el('audio-clothes'), -8, 0.5);
+      // clothes.mp3 has a quiet dip right after its lead-in (0.5-0.68s) before
+      // the actual satisfying rustle peak — starting at 0.5 played that dip
+      // first and read as a laggy sound; 0.68 starts right on the punch
+      playSfx(el('audio-clothes'), -8, 0.68);
       removeInventoryItem(itemId);
       ghost.remove();
       sourceSlot.classList.remove('drag-source');
@@ -681,37 +1484,77 @@ function setupInventoryDrag() {
         if (itemId === 'bag') {
           const followUpText = 'АльхамдулиЛлях, теперь надо расстелить коврик и сделать намаз.';
           const followUp = () => {
+            pendingBagFollowUp = null;
             playRoom2Dialogue(followUpText, el('audio-nor9'));
             lastRoom2Line = { text: followUpText, audioId: 'audio-nor9' };
+            state.readyForNamaz = true;
+            updateRoom4Access();
+            saveProgress();
           };
-          if (stepAudio) {
-            stepAudio.addEventListener('ended', followUp, { once: true });
-          } else {
-            setTimeout(followUp, 8000);
-          }
+          // a fixed timer, not stepAudio's 'ended' event: if the child keeps
+          // tapping Nor she keeps restarting this same line, and 'ended'
+          // would then never fire — leaving room3/room4 locked forever
+          const followUpTimer = setTimeout(followUp, 8000);
+          pendingBagFollowUp = () => {
+            clearTimeout(followUpTimer);
+            followUp();
+          };
         }
       }
       return;
     }
+
+    const droppedOnCarpetSpot = target && target.closest && target.closest('#hit-carpet-drop');
+    if (droppedOnCarpetSpot && itemId === 'carpet' && !state.carpetPlaced) {
+      el('inventory-wrap').style.pointerEvents = '';
+      state.carpetPlaced = true;
+      el('carpet-placed-img').classList.remove('hidden');
+      playSfx(el('audio-move'), -12);
+      removeInventoryItem('carpet');
+      ghost.remove();
+      sourceSlot.classList.remove('drag-source');
+      ghost = null;
+      sourceSlot = null;
+      inventoryDragActive = false;
+      el('hints-wrap').classList.remove('hidden');
+      const text = 'Теперь нужно положить его в правильном направлении. Чтобы узнать это направление, в комнате есть 3 подсказки. Собери их всех.';
+      playRoom4Dialogue(text, el('audio-nor26'));
+      lastRoom4Line = { text, audioId: 'audio-nor26' };
+      return;
+    }
+
     flyBack();
   }
 
+  // real press-and-hold drag (works for mouse AND touch): pointerdown picks
+  // the item up and captures the pointer so move/up keep arriving even as
+  // the finger slides off the original slot; pointerup drops it wherever
+  // the finger/cursor is at that moment
+  bar.addEventListener('pointerdown', (e) => {
+    if (ghost) return;
+    const slot = e.target.closest && e.target.closest('.inv-slot.filled');
+    if (!slot || !bar.contains(slot)) return;
+    e.preventDefault();
+    activePointerId = e.pointerId;
+    attach(slot, e.clientX, e.clientY);
+    if (e.target.setPointerCapture) {
+      try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+  });
+
   window.addEventListener('pointermove', (e) => {
-    if (!ghost) return;
+    if (!ghost || e.pointerId !== activePointerId) return;
     ghost.style.left = (e.clientX - ghost.offsetWidth / 2) + 'px';
     ghost.style.top = (e.clientY - ghost.offsetHeight / 2) + 'px';
   });
 
-  window.addEventListener('click', (e) => {
-    if (ghost) {
-      release(e.target);
-      return;
-    }
-    const slot = e.target.closest && e.target.closest('.inv-slot.filled');
-    if (slot && bar.contains(slot)) {
-      attach(slot, e.clientX, e.clientY);
-    }
-  });
+  function finishDrag(e) {
+    if (!ghost || e.pointerId !== activePointerId) return;
+    activePointerId = null;
+    release(e.clientX, e.clientY);
+  }
+  window.addEventListener('pointerup', finishDrag);
+  window.addEventListener('pointercancel', finishDrag);
 }
 
 // which inventory item, dropped on Nor, advances her outfit to which sprite —
@@ -719,25 +1562,25 @@ function setupInventoryDrag() {
 const NOR_OUTFIT_SEQUENCE = ['dress', 'socks', 'hijab', 'boots', 'bag'];
 const NOR_OUTFIT_STEPS = {
   dress: {
-    src: 'assets/img/redress/redress-2.png?v=1',
+    src: 'assets/img/redress/redress-2.webp?v=1',
     line: 'Моё любимое платье! Его подарил мне папа, когда мы путешествовали по Марокко.',
     audio: 'audio-nor5',
   },
   socks: {
-    src: 'assets/img/redress/redress-3.png?v=1',
+    src: 'assets/img/redress/redress-3.webp?v=1',
   },
   hijab: {
-    src: 'assets/img/redress/redress-4.png?v=1',
+    src: 'assets/img/redress/redress-4.webp?v=1',
     line: 'Хиджаб — это моя скромность и послушание Аллаху. Я люблю свой хиджаб!',
     audio: 'audio-nor6',
   },
   boots: {
-    src: 'assets/img/redress/redress-5.png?v=1',
+    src: 'assets/img/redress/redress-5.webp?v=1',
     line: 'Для намаза ботинки мне не нужны, я их сниму во время молитвы и снова надену перед выходом.',
     audio: 'audio-nor7',
   },
   bag: {
-    src: 'assets/img/redress/redress-6.png?v=1',
+    src: 'assets/img/redress/redress-6.webp?v=1',
     line: 'Перед выходом надо проверить, есть ли ключи и телефон в сумочке.',
     audio: 'audio-nor8',
   },
@@ -794,23 +1637,34 @@ function collectItem(id, label, icon, imgElId, hitElId, toFront) {
 
 el('hit-hijab').addEventListener('click', () => {
   if (state.talking) return;
-  collectItem('hijab', 'Хиджаб', 'assets/img/room2/hijab-item.png?v=1', 'hijab-img', 'hit-hijab');
+  collectItem('hijab', 'Хиджаб', 'assets/img/room2/hijab-item.webp?v=1', 'hijab-img', 'hit-hijab');
 });
 el('hit-dress').addEventListener('click', () => {
   if (state.talking) return;
-  collectItem('dress', 'Платье', 'assets/img/room2/dress-item.png?v=1', 'dress-img', 'hit-dress');
+  collectItem('dress', 'Платье', 'assets/img/room2/dress-item.webp?v=1', 'dress-img', 'hit-dress');
 });
 el('hit-socks').addEventListener('click', () => {
   if (state.talking) return;
-  collectItem('socks', 'Носки', 'assets/img/room2/socks-item.png?v=1', 'socks-img', 'hit-socks');
+  collectItem('socks', 'Носки', 'assets/img/room2/socks-item.webp?v=1', 'socks-img', 'hit-socks');
 });
 el('hit-bag').addEventListener('click', () => {
   if (state.talking) return;
-  collectItem('bag', 'Сумка', 'assets/img/room2/bag-item.png?v=2', 'bag-img', 'hit-bag');
+  collectItem('bag', 'Сумка', 'assets/img/room2/bag-item.webp?v=2', 'bag-img', 'hit-bag');
 });
 el('hit-boots').addEventListener('click', () => {
   if (state.talking) return;
-  collectItem('boots', 'Ботинки', 'assets/img/room2/boots-item.png?v=1', 'boots-img', 'hit-boots');
+  collectItem('boots', 'Ботинки', 'assets/img/room2/boots-item.webp?v=1', 'boots-img', 'hit-boots');
+});
+el('hit-carpet').addEventListener('click', () => {
+  if (state.talking) return;
+  collectItem('carpet', 'Коврик', 'assets/img/room4/carpet-in-tumbochka.webp?v=1', 'carpet-img', 'hit-carpet');
+});
+el('hit-compas-big').addEventListener('click', () => {
+  // the compass only becomes collectible once the hints panel is up —
+  // otherwise finding it this early gives no clue what it's even for
+  if (state.talking || !state.carpetPlaced) return;
+  collectItem('compass', 'Компас', 'assets/img/room4/compas-big.webp?v=1', 'compas-big-img', 'hit-compas-big');
+  el('compas-on-tumbochka-img').style.opacity = '0';
 });
 
 // ---------------- wudu card puzzle ----------------
@@ -1065,6 +1919,7 @@ el('card-reward').addEventListener('click', () => {
 });
 
 function playBathDialogue(text, audioEl) {
+  if (activeDialogueStop) activeDialogueStop();
   const box = el('bath-dialogue');
   el('bath-dialogue-text').textContent = text;
   box.classList.remove('hidden');
@@ -1077,14 +1932,30 @@ function playBathDialogue(text, audioEl) {
     const finish = () => {
       box.classList.add('hidden');
       audioEl.removeEventListener('ended', finish);
+      playBathDialogue._stop = null;
+      if (activeDialogueStop === stopBathDialogue) activeDialogueStop = null;
     };
     audioEl.addEventListener('ended', finish);
+    playBathDialogue._stop = () => { audioEl.pause(); finish(); };
   } else {
-    playBathDialogue._t = setTimeout(() => box.classList.add('hidden'), 8000);
+    playBathDialogue._stop = null;
+    playBathDialogue._t = setTimeout(() => {
+      box.classList.add('hidden');
+      if (activeDialogueStop === stopBathDialogue) activeDialogueStop = null;
+    }, 8000);
   }
+  activeDialogueStop = stopBathDialogue;
 }
+function stopBathDialogue() {
+  clearTimeout(playBathDialogue._t);
+  if (playBathDialogue._stop) playBathDialogue._stop();
+  else el('bath-dialogue').classList.add('hidden');
+  if (activeDialogueStop === stopBathDialogue) activeDialogueStop = null;
+}
+el('bath-dialogue-skip').addEventListener('click', stopBathDialogue);
 
 function playCardsDialogue(text, audioEl) {
+  if (activeDialogueStop) activeDialogueStop();
   const box = el('cards-dialogue');
   el('cards-dialogue-text').textContent = text;
   box.classList.remove('hidden');
@@ -1097,14 +1968,30 @@ function playCardsDialogue(text, audioEl) {
     const finish = () => {
       box.classList.add('hidden');
       audioEl.removeEventListener('ended', finish);
+      playCardsDialogue._stop = null;
+      if (activeDialogueStop === stopCardsDialogue) activeDialogueStop = null;
     };
     audioEl.addEventListener('ended', finish);
+    playCardsDialogue._stop = () => { audioEl.pause(); finish(); };
   } else {
-    playCardsDialogue._t = setTimeout(() => box.classList.add('hidden'), 8000);
+    playCardsDialogue._stop = null;
+    playCardsDialogue._t = setTimeout(() => {
+      box.classList.add('hidden');
+      if (activeDialogueStop === stopCardsDialogue) activeDialogueStop = null;
+    }, 8000);
   }
+  activeDialogueStop = stopCardsDialogue;
 }
+function stopCardsDialogue() {
+  clearTimeout(playCardsDialogue._t);
+  if (playCardsDialogue._stop) playCardsDialogue._stop();
+  else el('cards-dialogue').classList.add('hidden');
+  if (activeDialogueStop === stopCardsDialogue) activeDialogueStop = null;
+}
+el('cards-dialogue-skip').addEventListener('click', stopCardsDialogue);
 
 function playRoom2Dialogue(text, audioEl) {
+  if (activeDialogueStop) activeDialogueStop();
   const box = el('room2-dialogue');
   el('room2-dialogue-text').textContent = text;
   box.classList.remove('hidden');
@@ -1117,12 +2004,37 @@ function playRoom2Dialogue(text, audioEl) {
     const finish = () => {
       box.classList.add('hidden');
       audioEl.removeEventListener('ended', finish);
+      playRoom2Dialogue._stop = null;
+      if (activeDialogueStop === stopRoom2Dialogue) activeDialogueStop = null;
     };
     audioEl.addEventListener('ended', finish);
+    playRoom2Dialogue._stop = () => { audioEl.pause(); finish(); };
   } else {
-    playRoom2Dialogue._t = setTimeout(() => box.classList.add('hidden'), 8000);
+    playRoom2Dialogue._stop = null;
+    playRoom2Dialogue._t = setTimeout(() => {
+      box.classList.add('hidden');
+      if (activeDialogueStop === stopRoom2Dialogue) activeDialogueStop = null;
+    }, 8000);
   }
+  activeDialogueStop = stopRoom2Dialogue;
 }
+function stopRoom2Dialogue() {
+  clearTimeout(playRoom2Dialogue._t);
+  if (playRoom2Dialogue._stop) playRoom2Dialogue._stop();
+  else el('room2-dialogue').classList.add('hidden');
+  if (activeDialogueStop === stopRoom2Dialogue) activeDialogueStop = null;
+}
+el('room2-dialogue-skip').addEventListener('click', () => {
+  // skipping the bag line specifically jumps straight to its follow-up
+  // instead of just closing the box and leaving the timer to run out
+  if (pendingBagFollowUp) {
+    const fn = pendingBagFollowUp;
+    pendingBagFollowUp = null;
+    fn();
+    return;
+  }
+  stopRoom2Dialogue();
+});
 
 el('nor-redress-img').addEventListener('click', () => {
   if (inventoryDragActive) return; // this click is completing an item drop, not a plain tap
@@ -1133,6 +2045,54 @@ el('nor-redress-img').addEventListener('click', () => {
   }
 });
 
+// ---------------- room4: Nor by the door (after the carpet is found) ----------------
+
+let lastRoom4Line = null; // { text, audioId } of the most recent thing Nor said in room4 — tapping her repeats it
+
+function playRoom4Dialogue(text, audioEl) {
+  if (activeDialogueStop) activeDialogueStop();
+  const box = el('room4-dialogue');
+  // Nor stands below the bubble once she has appeared by the door: tail points down at her
+  box.classList.toggle('nor-below', !el('nor-room4-img').classList.contains('hidden'));
+  el('room4-dialogue-text').textContent = text;
+  box.classList.remove('hidden');
+  clearTimeout(playRoom4Dialogue._t);
+  if (audioEl) {
+    routeToMaster(audioEl, true);
+    audioEl.currentTime = 0;
+    audioEl.volume = dbToVol(0);
+    audioEl.play();
+    const finish = () => {
+      box.classList.add('hidden');
+      audioEl.removeEventListener('ended', finish);
+      playRoom4Dialogue._stop = null;
+      if (activeDialogueStop === stopRoom4Dialogue) activeDialogueStop = null;
+    };
+    audioEl.addEventListener('ended', finish);
+    playRoom4Dialogue._stop = () => { audioEl.pause(); finish(); };
+  } else {
+    playRoom4Dialogue._stop = null;
+    playRoom4Dialogue._t = setTimeout(() => {
+      box.classList.add('hidden');
+      if (activeDialogueStop === stopRoom4Dialogue) activeDialogueStop = null;
+    }, 8000);
+  }
+  activeDialogueStop = stopRoom4Dialogue;
+}
+function stopRoom4Dialogue() {
+  clearTimeout(playRoom4Dialogue._t);
+  if (playRoom4Dialogue._stop) playRoom4Dialogue._stop();
+  else el('room4-dialogue').classList.add('hidden');
+  if (activeDialogueStop === stopRoom4Dialogue) activeDialogueStop = null;
+}
+el('room4-dialogue-skip').addEventListener('click', stopRoom4Dialogue);
+
+el('nor-room4-img').addEventListener('click', () => {
+  if (lastRoom4Line) {
+    playRoom4Dialogue(lastRoom4Line.text, lastRoom4Line.audioId ? el(lastRoom4Line.audioId) : null);
+  }
+});
+
 // ---------------- wudu wash cutscene ----------------
 
 const CUTSCENE_STEP_MS = 4000;
@@ -1140,6 +2100,26 @@ const CUTSCENE_STEP_MS = 4000;
 function stopSfx(audioEl) {
   audioEl.pause();
   audioEl.currentTime = 0;
+}
+
+let cutsceneTimeouts = [];
+let cutsceneAudios = [];
+
+function finishCutscene() {
+  cutsceneAudios.forEach(stopSfx);
+  state.norLeftBath = true;
+  state.norOutfitStage = 0;
+  updateBathVisual();
+  el('nor-redress-img').classList.remove('hidden');
+  playSfx(el('audio-door'), -7);
+  el('hit-bath-door').classList.remove('hidden'); // free to follow her out now
+  showScreen('bath');
+}
+
+function skipCutscene() {
+  cutsceneTimeouts.forEach(clearTimeout);
+  cutsceneTimeouts = [];
+  finishCutscene();
 }
 
 function playCutscene() {
@@ -1153,40 +2133,124 @@ function playCutscene() {
   const faucet = el('audio-faucet-sink');
   const drops = el('audio-drops');
   const towel = el('audio-towel');
+  cutsceneAudios = [valve, sink, faucet, drops, towel];
 
   playSfx(valve, -10);
-  setTimeout(() => playSfx(sink, -6), 2000);
+  cutsceneTimeouts = [
+    setTimeout(() => playSfx(sink, -6), 2000),
 
-  setTimeout(() => {
-    stopSfx(valve);
-    stopSfx(sink);
-    showFrame(1);
-    playSfx(faucet, 0);
-  }, CUTSCENE_STEP_MS);
+    setTimeout(() => {
+      stopSfx(valve);
+      stopSfx(sink);
+      showFrame(1);
+      playSfx(faucet, 0);
+    }, CUTSCENE_STEP_MS),
 
-  setTimeout(() => {
-    stopSfx(faucet);
-    showFrame(2);
-    playSfx(drops, 0);
-  }, CUTSCENE_STEP_MS * 2);
+    setTimeout(() => {
+      stopSfx(faucet);
+      showFrame(2);
+      playSfx(drops, 0);
+    }, CUTSCENE_STEP_MS * 2),
 
-  setTimeout(() => {
-    stopSfx(drops);
-    showFrame(3);
-    playSfx(towel, -6);
-  }, CUTSCENE_STEP_MS * 3);
+    setTimeout(() => {
+      stopSfx(drops);
+      showFrame(3);
+      playSfx(towel, -6);
+    }, CUTSCENE_STEP_MS * 3),
 
-  setTimeout(() => {
-    stopSfx(towel);
-    state.norLeftBath = true;
-    state.norOutfitStage = 0;
-    updateBathVisual();
-    el('nor-redress-img').classList.remove('hidden');
-    playSfx(el('audio-door'), -7);
-    el('hit-bath-door').classList.remove('hidden'); // free to follow her out now
-    showScreen('bath');
-  }, CUTSCENE_STEP_MS * 4);
+    setTimeout(() => {
+      cutsceneTimeouts = [];
+      finishCutscene();
+    }, CUTSCENE_STEP_MS * 4),
+  ];
 }
+
+el('cutscene-skip').addEventListener('click', skipCutscene);
+
+// ---------------- intro cutscene ----------------
+
+const INTRO_NARRATORS = {
+  1: 'audio-narrator-intro-1',
+  2: 'audio-narrator-intro-2',
+  3: 'audio-narrator-intro-3',
+  4: 'audio-narrator-intro-4',
+};
+const INTRO_DARKEN_MS = 500;
+
+let introTimeouts = [];
+
+function clearIntroTimeouts() {
+  introTimeouts.forEach(clearTimeout);
+  introTimeouts = [];
+}
+
+function stopIntroNarrators() {
+  Object.values(INTRO_NARRATORS).forEach(id => {
+    const a = el(id);
+    a.pause();
+    a.currentTime = 0;
+    a.onended = null;
+  });
+}
+
+function showIntroFrame(n) {
+  for (let i = 1; i <= 4; i++) {
+    el('intro-frame-' + i).classList.toggle('active', i === n);
+  }
+  el('intro-yes-btn').classList.toggle('hidden', n !== 4);
+}
+
+function playIntroNarrator(n) {
+  const audio = el(INTRO_NARRATORS[n]);
+  routeToMaster(audio, 'narrator');
+  audio.currentTime = 0;
+  audio.volume = dbToVol(-6);
+  audio.onended = () => {
+    if (n < 4) introDarkenTo(n + 1);
+  };
+  audio.play();
+}
+
+// card change = fade to black, swap the picture underneath, fade back up —
+// timed to start the moment the current line finishes narrating
+function introDarkenTo(n) {
+  el('intro-dim').classList.add('show-transition');
+  introTimeouts.push(setTimeout(() => {
+    showIntroFrame(n);
+    playIntroNarrator(n);
+    el('intro-dim').classList.remove('show-transition');
+  }, INTRO_DARKEN_MS));
+}
+
+function startIntro() {
+  el('inventory-wrap').classList.add('hidden');
+  showScreen('intro');
+  clearIntroTimeouts();
+  stopIntroNarrators();
+  el('intro-dim').classList.remove('show-transition');
+  el('intro-dim').classList.add('show-hint');
+  el('intro-play-btn').classList.remove('hidden');
+  showIntroFrame(1);
+}
+
+function finishIntro() {
+  clearIntroTimeouts();
+  stopIntroNarrators();
+  el('inventory-wrap').classList.remove('hidden');
+  showScreen('room');
+}
+
+el('intro-play-btn').addEventListener('click', () => {
+  playSfx(el('audio-move'), -12);
+  el('intro-play-btn').classList.add('hidden');
+  el('intro-dim').classList.remove('show-hint');
+  introTimeouts.push(setTimeout(() => playIntroNarrator(1), 200));
+});
+
+el('intro-yes-btn').addEventListener('click', () => {
+  playSfx(el('audio-move'), -12);
+  finishIntro();
+});
 
 // ---------------- init ----------------
 
@@ -1210,6 +2274,8 @@ if (hasSavedProgress() && new URLSearchParams(location.search).has('continue')) 
   applyLoadedState();
 } else if (hasSavedProgress()) {
   el('save-prompt').classList.remove('hidden');
+} else {
+  startIntro();
 }
 
 el('save-prompt-continue').addEventListener('click', () => {
@@ -1237,6 +2303,7 @@ if (location.search.includes('debug')) {
     b.addEventListener('click', fn);
     panel.appendChild(b);
   };
+  btn('Вступление', () => startIntro());
   btn('Комната', () => showScreen('room'));
   btn('Окно', () => showScreen('window'));
   btn('Часы', () => showScreen('clock'));
@@ -1245,9 +2312,20 @@ if (location.search.includes('debug')) {
   btn('Комната 2', () => showScreen('room2'));
   btn('Шкаф (крупный план)', () => {
     wardrobeOpen = true;
-    el('wardrobe-img').src = 'assets/img/room2/wardrobe-open.png?v=1';
+    el('wardrobe-img').src = 'assets/img/room2/wardrobe-open.webp?v=2';
     showScreen('wardrobe');
   });
+  // jumping straight to a later stage shouldn't leave earlier-stage items
+  // sitting in the inventory, and shouldn't be missing ones already earned —
+  // this puts the Бисмиллях reward card where it belongs (never consumed,
+  // so it should be present from the moment the cards are solved onward)
+  function debugMarkCardsSolved() {
+    state.cardsSolved = true;
+    winTriggered = true;
+    if (!state.inventory.some(it => it.id === 'card-1')) {
+      collectItem('card-1', CARD_LABELS[1], 'assets/img/room2/cards/card-1.jpg?v=1', null, null, true);
+    }
+  }
   btn('Ванная', () => { updateBathVisual(); showScreen('bath'); });
   btn('Карточки', () => { updateCardsView(); showScreen('cards'); });
   btn('Разложить карточки', () => {
@@ -1258,6 +2336,9 @@ if (location.search.includes('debug')) {
     setTimeout(() => {
       for (let i = 1; i <= 9; i++) cardSlotOf[i] = i - 1;
       checkCardsWin();
+      el('cards-success').classList.add('hidden');
+      debugMarkCardsSolved();
+      updateBathVisual();
     }, 800);
   });
   btn('Катсцена омовения', () => playCutscene());
@@ -1267,17 +2348,34 @@ if (location.search.includes('debug')) {
     renderInventory();
     state.norLeftBath = true;
     state.norOutfitStage = 0;
-    el('nor-redress-img').src = 'assets/img/redress/redress-1.png?v=1';
+    el('nor-redress-img').src = 'assets/img/redress/redress-1.webp?v=1';
     el('nor-redress-img').classList.remove('hidden');
     const nasheed = el('audio-nasheed');
     routeToMaster(nasheed, false);
     nasheed.volume = dbToVol(-16);
     nasheed.play();
-    collectItem('dress', 'Платье', 'assets/img/room2/dress-item.png?v=2', null, null, false);
-    collectItem('socks', 'Носки', 'assets/img/room2/socks-item.png?v=1', null, null, false);
-    collectItem('hijab', 'Хиджаб', 'assets/img/room2/hijab-item.png?v=1', null, null, false);
-    collectItem('boots', 'Ботинки', 'assets/img/room2/boots-item.png?v=1', null, null, false);
-    collectItem('bag', 'Сумка', 'assets/img/room2/bag-item.png?v=2', null, null, false);
+    // wudu (and the Бисмиллях card it earns) already happened before dressing
+    debugMarkCardsSolved();
+    collectItem('dress', 'Платье', 'assets/img/room2/dress-item.webp?v=2', null, null, false);
+    collectItem('socks', 'Носки', 'assets/img/room2/socks-item.webp?v=1', null, null, false);
+    collectItem('hijab', 'Хиджаб', 'assets/img/room2/hijab-item.webp?v=1', null, null, false);
+    collectItem('boots', 'Ботинки', 'assets/img/room2/boots-item.webp?v=1', null, null, false);
+    collectItem('bag', 'Сумка', 'assets/img/room2/bag-item.webp?v=2', null, null, false);
+    restoreCollectedItemSprites();
+    showScreen('room2');
+  });
+  btn('Нор оделась', () => {
+    state.norLeftBath = true;
+    state.norOutfitStage = NOR_OUTFIT_SEQUENCE.length;
+    state.readyForNamaz = true;
+    // every dressing item has already been worn (and dropped from the
+    // inventory) by this point — only the Бисмиллях card should remain
+    ['dress', 'socks', 'hijab', 'boots', 'bag'].forEach(removeInventoryItem);
+    debugMarkCardsSolved();
+    restoreCollectedItemSprites();
+    el('nor-redress-img').src = NOR_OUTFIT_STEPS.bag.src;
+    el('nor-redress-img').classList.remove('hidden');
+    updateRoom4Access();
     showScreen('room2');
   });
   btn('Инвентарь', () => el('inventory-wrap').classList.toggle('open'));

@@ -136,14 +136,14 @@ html, body {
   height: 22%;
   margin-left: -3%;
   margin-top: -22%;
-  transform: rotate(50deg);
+  transform: rotate(0deg); /* 12:00 default; JS overrides once the puzzle is solved */
 }
 .clock-icon-hand.minute {
   width: 5%;
   height: 30%;
   margin-left: -2.5%;
   margin-top: -30%;
-  transform: rotate(180deg);
+  transform: rotate(0deg);
 }
 
 /* small prayer-times plaque under the clock icon */
@@ -263,6 +263,46 @@ html, body {
   color: #3a2a1a;
   font-size: 2vmin;
   line-height: 1.35;
+}
+.dialogue-skip-btn {
+  position: absolute;
+  top: 100%;
+  margin-top: -1.6vmin;
+  right: 10%;
+  background: #a9793f;
+  border: 2px solid #f4ead9;
+  color: #f4ead9;
+  font-size: 1.6vmin;
+  font-weight: 600;
+  padding: 0.7vmin 2.4vmin;
+  border-radius: 20px;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.dialogue-skip-btn:hover {
+  background: #bd8a4a;
+}
+
+.cutscene-skip-btn {
+  position: absolute;
+  top: 4%;
+  right: 4%;
+  background: #a9793f;
+  border: 2px solid #f4ead9;
+  color: #f4ead9;
+  font-size: 1.8vmin;
+  font-weight: 600;
+  padding: 1vmin 2.8vmin;
+  border-radius: 20px;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  cursor: pointer;
+  z-index: 30;
+}
+.cutscene-skip-btn:hover {
+  background: #bd8a4a;
 }
 #dialogue-tail {
   position: absolute;
@@ -461,6 +501,27 @@ html, body {
   height: 74.95%;
   z-index: 5;
 }
+#hit-mirror {
+  left: 17.95%;
+  top: 8.6%;
+  width: 24.75%;
+  height: 41.7%;
+  z-index: 4;
+}
+#hit-booklet {
+  left: 21.6%;
+  top: 30.15%;
+  width: 7.2%;
+  height: 11.6%;
+  z-index: 5;
+}
+#hit-booklet-closeup {
+  left: 33.38%;
+  top: 51.33%;
+  width: 13.71%;
+  height: 22.1%;
+  z-index: 5;
+}
 
 #nor-redress-img {
   position: absolute;
@@ -475,12 +536,463 @@ html, body {
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
 }
 
+#nor-room4-img {
+  position: absolute;
+  left: 1%;
+  bottom: 8%;
+  height: 56%;
+  width: auto;
+  max-width: none;
+  z-index: 6;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+}
+
+#room4-dialogue {
+  position: absolute;
+  left: 6%;
+  top: 12%;
+  width: 46%;
+  pointer-events: none;
+  z-index: 45;
+}
+#room4-dialogue-bubble {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#room4-dialogue-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#room4-dialogue-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-left: 3px solid #a9793f;
+  border-top: 3px solid #a9793f;
+  transform: translateX(-50%) rotate(45deg);
+  top: -3.5%;
+  left: 20%;
+}
+
+/* Nor is on screen below the bubble: tail points down at her head */
+#room4-dialogue.nor-below #room4-dialogue-tail {
+  border-left: none;
+  border-top: none;
+  border-right: 3px solid #a9793f;
+  border-bottom: 3px solid #a9793f;
+  top: auto;
+  bottom: -3.5%;
+  left: 20%;
+}
+
 #hit-wardrobe-drawer {
   left: 7%;
   top: 62.4%;
   width: 45.5%;
   height: 9.7%;
   z-index: 5;
+}
+
+/* ---- room4: door / nightstand / board ---- */
+#hit-board {
+  left: 58.2%;
+  top: 13.35%;
+  width: 26.9%;
+  height: 44.75%;
+  z-index: 5;
+}
+#hit-tumbochka-top {
+  left: 65.75%;
+  top: 63%;
+  width: 29.5%;
+  height: 6%;
+  z-index: 6;
+}
+#hit-tumbochka-drawer {
+  left: 65.75%;
+  top: 74%;
+  width: 29.5%;
+  height: 8%;
+  z-index: 6;
+}
+#hit-carpet {
+  left: 26.05%;
+  top: 0%;
+  width: 73.95%;
+  height: 92.3%;
+  z-index: 5;
+}
+#hit-compas-big {
+  left: 20.95%;
+  top: 10.35%;
+  width: 57.75%;
+  height: 70%;
+  z-index: 5;
+}
+#hit-computer {
+  left: 40.05%;
+  top: 37.5%;
+  width: 26%;
+  height: 21.35%;
+  z-index: 5;
+}
+#hit-computer-power {
+  left: 48.5%;
+  top: 61%;
+  width: 5%;
+  height: 5%;
+  z-index: 6;
+}
+#computer-wall-bg {
+  /* the wall photo's floor line sits well below this closeup's frame —
+     scale up from the top edge so it never peeks in at the bottom */
+  transform: scale(1.4);
+  transform-origin: top center;
+}
+#hit-internet-icon {
+  left: 48.2%;
+  top: 21.35%;
+  width: 6.5%;
+  height: 6.8%;
+  z-index: 7;
+}
+#hit-icon-study {
+  left: 17.75%;
+  top: 21.3%;
+  width: 6.8%;
+  height: 7.25%;
+  z-index: 7;
+}
+#hit-icon-koran {
+  left: 25.3%;
+  top: 21.3%;
+  width: 6.9%;
+  height: 7.25%;
+  z-index: 7;
+}
+#hit-icon-photos {
+  left: 32.95%;
+  top: 21.3%;
+  width: 6.85%;
+  height: 7.25%;
+  z-index: 7;
+}
+#hit-icon-documents {
+  left: 40.6%;
+  top: 21.3%;
+  width: 6.8%;
+  height: 7.25%;
+  z-index: 7;
+}
+#computer-video-wrap {
+  position: absolute;
+  left: 10.25%;
+  top: 17.15%;
+  width: 78.3%;
+  height: 44%;
+  z-index: 8;
+  background: #f7e6d5;
+  border-radius: 1.3% / 2.3%;
+  overflow: hidden;
+}
+#computer-video-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.computer-video-ended-hide {
+  opacity: 0;
+}
+#computer-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+#computer-video-play {
+  position: absolute;
+  left: 49.4%;
+  top: 39.15%;
+  transform: translate(-50%, -50%);
+  width: 11%;
+  aspect-ratio: 1/1;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: rgba(244,234,217,0.8);
+  cursor: pointer;
+  z-index: 11;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45));
+}
+#computer-video-play svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#computer-video-play.hidden { display: none !important; }
+#computer-video-skip {
+  position: absolute;
+  right: 13.5%;
+  top: 54%;
+  background: #a9793f;
+  border: 2px solid #f4ead9;
+  color: #f4ead9;
+  font-size: 1.6vmin;
+  font-weight: 600;
+  padding: 0.7vmin 2.4vmin;
+  border-radius: 20px;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  cursor: pointer;
+  z-index: 12;
+}
+#computer-video-skip:hover { background: #bd8a4a; }
+#computer-video-skip.hidden { display: none !important; }
+#computer-video-frame {
+  z-index: 9;
+  pointer-events: none;
+}
+#computer-video-top-layer {
+  z-index: 10;
+  pointer-events: none;
+}
+#computer-search-wrap {
+  position: absolute;
+  left: 10%;
+  top: 19%;
+  width: 78%;
+  z-index: 8;
+}
+#computer-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 2.5%;
+  width: 100%;
+  padding: 1.6% 4%;
+  border-radius: 30px;
+  border: 1.5px solid #a9793f;
+  background: #f4ead9;
+  color: #6b4a35;
+  font-size: 1.8vmin;
+  text-align: start;
+  cursor: pointer;
+}
+#computer-search-bar svg {
+  width: 2.2vmin;
+  height: 2.2vmin;
+  flex-shrink: 0;
+}
+#computer-search-suggestions {
+  margin-top: 1.2%;
+  background: #f4ead9;
+  border: 1.5px solid #a9793f;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+.search-suggestion {
+  display: block;
+  width: 100%;
+  padding: 1.6% 4%;
+  border: none;
+  border-bottom: 1px solid rgba(169,121,63,0.3);
+  background: transparent;
+  color: #3a2a1a;
+  font-size: 1.7vmin;
+  text-align: start;
+  cursor: pointer;
+}
+.search-suggestion:last-child { border-bottom: none; }
+.search-suggestion:hover, .search-suggestion:active { background: rgba(169,121,63,0.18); }
+
+/* generic "window" for anything shown on the computer screen besides the
+   compass video — reuses the same screen rect, and the frame/glow layers
+   from the video feature mask it the same way, so no new art is needed */
+#computer-window {
+  position: absolute;
+  left: 10.25%;
+  top: 17.15%;
+  width: 78.3%;
+  height: 44%;
+  z-index: 8;
+  background: #f7e6d5;
+  border-radius: 1.3% / 2.3%;
+  overflow: hidden;
+}
+#computer-window-image,
+#computer-window-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #f7e6d5;
+}
+#computer-window-menu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4vmin;
+  padding: 4%;
+  overflow-y: auto;
+}
+.computer-window-menu-item {
+  width: 72%;
+  padding: 1.6vmin 2vmin;
+  border-radius: 20px;
+  border: 1.5px solid #a9793f;
+  background: #f4ead9;
+  color: #3a2a1a;
+  font-size: 1.8vmin;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.computer-window-menu-item:hover,
+.computer-window-menu-item:active {
+  background: rgba(169,121,63,0.18);
+}
+.computer-window-nav {
+  position: absolute;
+  top: 19%;
+  width: 5.5%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: rgba(20,20,25,0.45);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #f4ead9;
+  font-size: 2.2vmin;
+  cursor: pointer;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#computer-window-back { left: 12%; }
+#computer-window-close { right: 12%; }
+#computer-view-close { left: 12%; }
+
+#room3-dialogue {
+  position: absolute;
+  left: 8%;
+  top: 65%;
+  width: 54%;
+  pointer-events: none;
+  z-index: 45;
+}
+#room3-dialogue-bubble {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#room3-dialogue-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#room3-dialogue-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-left: 3px solid #a9793f;
+  border-top: 3px solid #a9793f;
+  transform: translateX(-50%) rotate(45deg);
+  top: -3.5%;
+  left: 20%;
+}
+#hit-carpet-drop {
+  left: 34.65%;
+  top: 74%;
+  width: 35.1%;
+  height: 25.95%;
+  z-index: 5;
+}
+
+/* the board closeup has no dedicated pre-drawn zoomed art, so it crops into
+   the board's own region of the shared wall canvas and scales that region
+   up to fill the screen; the math below keeps the crop free of distortion
+   because the wrapper's aspect-ratio matches the board's own w/h fraction */
+#board-closeup-wrap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 100%;
+  aspect-ratio: 26.9 / 44.75;
+  overflow: hidden;
+}
+#board-closeup-wrap img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: auto;
+  width: 371.75%;
+  height: auto;
+  transform: translate(-58.2%, -13.35%);
+  max-width: none;
+}
+/* shrunk toward each sticker's own center (not the full bounding box) —
+   the stickers sit close together on the board, so full-bbox rectangles
+   overlapped and stole taps meant for a neighboring sticker */
+#hit-board-sticker-1 { left: 48.11%; top: 38.39%; width: 30.36%; height: 17.64%; z-index: 6; }
+#hit-board-sticker-2 { left: 37.53%; top: 66.51%; width: 33.12%; height: 15.92%; z-index: 5; }
+#hit-board-sticker-3 { left: 21.35%; top: 30.43%; width: 31.28%; height: 17.58%; z-index: 5; }
+#hit-board-sticker-4 { left: 17.72%; top: 49.01%; width: 16.97%; height: 14.62%; z-index: 5; }
+#hit-board-sticker-5 { left: 49.89%; top: 12.29%; width: 28.83%; height: 12.29%; z-index: 5; }
+
+#sticker-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(20,16,12,0.78);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.2vmin;
+  cursor: pointer;
+}
+#sticker-lightbox-img {
+  max-width: 84%;
+  max-height: 84%;
+  object-fit: contain;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+}
+#sticker-lightbox-caption {
+  max-width: 70%;
+  margin: 0;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 1.6vmin 3.2vmin;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+  cursor: default;
 }
 
 #hit-bath-door {
@@ -531,10 +1043,10 @@ html, body {
   width: 4.5%;
   aspect-ratio: 1/1;
   background: #f4ead9;
-  border-right: 3px solid #a9793f;
-  border-bottom: 3px solid #a9793f;
+  border-left: 3px solid #a9793f;
+  border-top: 3px solid #a9793f;
   transform: rotate(45deg);
-  bottom: -3.5%;
+  top: -3.5%;
   right: 18%;
 }
 
@@ -566,10 +1078,10 @@ html, body {
   width: 4.5%;
   aspect-ratio: 1/1;
   background: #f4ead9;
-  border-right: 3px solid #a9793f;
-  border-bottom: 3px solid #a9793f;
+  border-left: 3px solid #a9793f;
+  border-top: 3px solid #a9793f;
   transform: rotate(45deg);
-  bottom: -3.5%;
+  top: -3.5%;
   right: 18%;
 }
 
@@ -817,6 +1329,77 @@ html, body {
   transform: translateY(0);
 }
 
+#hints-wrap {
+  position: absolute;
+  right: 2.5%;
+  top: 2.5%;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1vmin;
+}
+#hints-wrap.hidden { display: none !important; }
+
+#hints-toggle {
+  width: 7.5vmin;
+  height: 7.5vmin;
+  border-radius: 50%;
+  background: rgba(20,20,25,0.4);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(244,234,217,0.9);
+  font-size: 3.4vmin;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#hints-toggle svg {
+  width: 3.6vmin;
+  height: 3.6vmin;
+}
+
+#hints-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 1vmin;
+  padding: 1.3vmin;
+  background: rgba(20,20,25,0.35);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 12px;
+}
+#hints-bar.hidden { display: none !important; }
+
+.hint-slot {
+  min-width: 15vmin;
+  min-height: 6vmin;
+  padding: 0.8vmin 1.8vmin;
+  background: rgba(255,255,255,0.1);
+  border: 1.5px dashed rgba(255,255,255,0.32);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1.7vmin;
+  line-height: 1.3;
+  color: #f4ead9;
+}
+.hint-slot.filled {
+  border-style: solid;
+  border-color: #f4d58d;
+  background: rgba(244,213,141,0.2);
+  color: #f4d58d;
+  font-weight: bold;
+  animation: hint-reveal 0.9s ease;
+}
+@keyframes hint-reveal {
+  0% { opacity: 0; transform: scale(0.92); box-shadow: 0 0 0 rgba(244,213,141,0); }
+  40% { opacity: 1; transform: scale(1.05); box-shadow: 0 0 18px rgba(244,213,141,0.85); }
+  100% { opacity: 1; transform: scale(1); box-shadow: 0 0 6px rgba(244,213,141,0.35); }
+}
+
 #lang-wrap {
   position: absolute;
   right: 2.5%;
@@ -979,6 +1562,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: none;
 }
 .inv-slot.filled {
   border-style: solid;
@@ -1073,4 +1657,83 @@ html, body {
 }
 .cutscene-frame.active {
   opacity: 1;
+}
+
+/* ---- intro cutscene ---- */
+
+#scene-intro {
+  background: #000;
+}
+/* the picture swap itself is instant — it happens while fully hidden under
+   #intro-dim, so the only visible motion is the dim's own fade in/out */
+#scene-intro .cutscene-frame {
+  transition: none;
+}
+#intro-dim {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .5s ease;
+}
+#intro-dim.show-hint {
+  opacity: 0.45;
+}
+#intro-dim.show-transition {
+  opacity: 1;
+}
+#intro-play-btn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #a9793f;
+  border: 3px solid #f4ead9;
+  color: #f4ead9;
+  font-size: 3.6vmin;
+  font-weight: 600;
+  padding: 2.4vmin 6vmin;
+  border-radius: 40px;
+  white-space: nowrap;
+  box-shadow: 0 5px 18px rgba(0,0,0,0.45);
+  cursor: pointer;
+  z-index: 30;
+}
+#intro-play-btn:hover {
+  background: #bd8a4a;
+}
+#intro-play-btn.hidden {
+  display: none !important;
+}
+#intro-yes-btn {
+  left: 60.4%;
+  top: 29%;
+  width: 25.2%;
+  height: 25.1%;
+  border-radius: 50%;
+  z-index: 30;
+}
+
+/* ---- compass opened from the inventory: a third of the stage, in the middle,
+   over a light dim so the room stays visible behind it ---- */
+#compass-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: rgba(20,16,12,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* clicks pass straight through, so the room arrows keep working while the
+     compass stays open; only the compass itself reacts (to close it) */
+  pointer-events: none;
+}
+#compass-overlay-img {
+  pointer-events: auto;
+  cursor: pointer;
+  width: 38%;
+  height: auto;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.45));
 }
