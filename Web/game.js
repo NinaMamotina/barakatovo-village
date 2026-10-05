@@ -1611,11 +1611,12 @@ const CARPET_ORDER = ['n', 'e', 's', 'w']; // clockwise
 function updateCarpetImage() {
   el('carpet-placed-img').src = 'assets/img/room4/carpet-' + (state.carpetDir || 'w') + '.webp?v=1';
 }
-function updateCarpetArrows() {
+function carpetTappable() {
   const all = state.hintsFound.kibla && state.hintsFound.compass && state.hintsFound.south;
-  const show = !!(state.carpetPlaced && all && state.carpetDir !== 's');
-  el('carpet-rot-left').classList.toggle('hidden', !show);
-  el('carpet-rot-right').classList.toggle('hidden', !show);
+  return !!(state.carpetPlaced && all && state.carpetDir !== 's');
+}
+function updateCarpetArrows() {
+  el('carpet-placed-img').classList.toggle('carpet-tappable', carpetTappable());
 }
 function rotateCarpet(step) {
   const k = CARPET_ORDER.indexOf(state.carpetDir || 'w');
@@ -1628,8 +1629,11 @@ function rotateCarpet(step) {
   }
   saveProgress();
 }
-el('carpet-rot-left').addEventListener('click', () => rotateCarpet(-1));
-el('carpet-rot-right').addEventListener('click', () => rotateCarpet(1));
+// tapping the carpet turns it one step clockwise
+el('hit-carpet-drop').addEventListener('click', () => {
+  if (state.talking || !carpetTappable()) return;
+  rotateCarpet(1);
+});
 let kiblaWhereSouthPending = false;
 el('sticker-lightbox').addEventListener('click', () => {
   const wasKibla = el('sticker-lightbox-img').src.includes('board-zoom-4');
