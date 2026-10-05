@@ -92,20 +92,38 @@ function routeToMaster(audioEl, bus) {
 // looking at its closeup; leaving to the wider view or switching it off stops it.
 // Played from a decoded buffer so the loop point is truly gapless.
 // the nasheed that plays after Nor leaves the bathroom steps aside while the
-// player is at the computer closeup, and carries on from the same spot afterwards
+// player is at the computer closeup (fading out, not cutting), and fades back in
+// from the same spot afterwards
 let nasheedPausedForComputer = false;
+let nasheedFadeTimer = null;
+function fadeAudioVolume(audio, toVol, ms, done) {
+  clearInterval(nasheedFadeTimer);
+  const fromVol = audio.volume;
+  const t0 = performance.now();
+  nasheedFadeTimer = setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    audio.volume = Math.max(0, Math.min(1, fromVol + (toVol - fromVol) * k));
+    if (k >= 1) {
+      clearInterval(nasheedFadeTimer);
+      if (done) done();
+    }
+  }, 40);
+}
 function updateNasheedForComputer(name) {
   const nasheed = el('audio-nasheed');
   if (name === 'computer') {
-    if (!nasheed.paused) {
-      nasheed.pause();
+    if (!nasheed.paused && !nasheedPausedForComputer) {
       nasheedPausedForComputer = true;
+      fadeAudioVolume(nasheed, 0, 700, () => nasheed.pause());
     }
   } else if (nasheedPausedForComputer) {
     nasheedPausedForComputer = false;
     routeToMaster(nasheed, false);
-    nasheed.volume = dbToVol(-16);
-    nasheed.play();
+    if (nasheed.paused) {
+      nasheed.volume = 0;
+      nasheed.play();
+    }
+    fadeAudioVolume(nasheed, dbToVol(-16), 1000);
   }
 }
 
@@ -126,11 +144,18 @@ function humShouldPlay() {
 }
 function stopHum() {
   if (!humSource) return;
-  try { humSource.stop(); } catch (e) {}
-  humSource.disconnect();
-  humGain.disconnect();
+  // fade out instead of cutting, then release the nodes
+  const src = humSource, gain = humGain, ctx = masterCtx;
   humSource = null;
   humGain = null;
+  gain.gain.cancelScheduledValues(ctx.currentTime);
+  gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
+  setTimeout(() => {
+    try { src.stop(); } catch (e) {}
+    src.disconnect();
+    gain.disconnect();
+  }, 600);
 }
 function startHum() {
   if (humSource) return;
@@ -150,7 +175,8 @@ function startHum() {
   humSource.buffer = humBuffer;
   humSource.loop = true;
   humGain = ctx.createGain();
-  humGain.gain.value = dbToVol(-12);
+  humGain.gain.value = 0;
+  humGain.gain.linearRampToValueAtTime(dbToVol(-12), ctx.currentTime + 0.6);
   humSource.connect(humGain);
   humGain.connect(masterLimiter);
   humSource.start(0);
