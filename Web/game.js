@@ -89,29 +89,82 @@ function routeToMaster(audioEl, bus) {
 }
 
 // the computer's running hum loops while it is switched on and the player is
-// looking at its closeup; leaving to the wider view or switching it off stops it
+// looking at its closeup; leaving to the wider view or switching it off stops it.
+// Played from a decoded buffer so the loop point is truly gapless.
+// the nasheed that plays after Nor leaves the bathroom steps aside while the
+// player is at the computer closeup, and carries on from the same spot afterwards
+let nasheedPausedForComputer = false;
+function updateNasheedForComputer(name) {
+  const nasheed = el('audio-nasheed');
+  if (name === 'computer') {
+    if (!nasheed.paused) {
+      nasheed.pause();
+      nasheedPausedForComputer = true;
+    }
+  } else if (nasheedPausedForComputer) {
+    nasheedPausedForComputer = false;
+    routeToMaster(nasheed, false);
+    nasheed.volume = dbToVol(-16);
+    nasheed.play();
+  }
+}
+
 let computerHumTimer = null;
-function updateComputerHum(delayMs) {
-  clearTimeout(computerHumTimer);
-  const hum = el('audio-computer-hum');
+let humBuffer = null;
+let humBufferLoading = false;
+let humSource = null;
+let humGain = null;
+
+function humShouldPlay() {
   const active = document.querySelector('.screen.active');
-  const should = state.computerOn && active && active.id === 'scene-computer';
-  if (!should) {
-    if (!hum.paused) { hum.pause(); hum.currentTime = 0; }
+  // either video (compass or cats) playing takes over the sound
+  const videoPlaying = ['computer-video', 'computer-window-video'].some(id => {
+    const v = el(id);
+    return v && !v.paused && !v.ended;
+  });
+  return !!(state.computerOn && active && active.id === 'scene-computer' && !videoPlaying);
+}
+function stopHum() {
+  if (!humSource) return;
+  try { humSource.stop(); } catch (e) {}
+  humSource.disconnect();
+  humGain.disconnect();
+  humSource = null;
+  humGain = null;
+}
+function startHum() {
+  if (humSource) return;
+  const ctx = ensureMasterBus();
+  if (!ctx) return;
+  if (!humBuffer) {
+    if (humBufferLoading) return;
+    humBufferLoading = true;
+    fetch('assets/audio/computer-hum-loop.wav?v=1')
+      .then(r => r.arrayBuffer())
+      .then(buf => new Promise((res, rej) => ctx.decodeAudioData(buf, res, rej)))
+      .then(decoded => { humBuffer = decoded; humBufferLoading = false; updateComputerHum(); })
+      .catch(() => { humBufferLoading = false; });
     return;
   }
-  if (!hum.paused) return;
-  const start = () => {
-    const stillActive = document.querySelector('.screen.active');
-    if (!state.computerOn || !stillActive || stillActive.id !== 'scene-computer') return;
-    routeToMaster(hum, false);
-    hum.loop = true;
-    hum.volume = dbToVol(-12);
-    hum.play();
-  };
-  if (delayMs) computerHumTimer = setTimeout(start, delayMs);
-  else start();
+  humSource = ctx.createBufferSource();
+  humSource.buffer = humBuffer;
+  humSource.loop = true;
+  humGain = ctx.createGain();
+  humGain.gain.value = dbToVol(-12);
+  humSource.connect(humGain);
+  humGain.connect(masterLimiter);
+  humSource.start(0);
 }
+function updateComputerHum() {
+  if (humShouldPlay()) startHum();
+  else stopHum();
+}
+
+['computer-video', 'computer-window-video'].forEach(id => {
+  const v = el(id);
+  if (!v) return;
+  ['play', 'playing', 'pause', 'ended'].forEach(ev => v.addEventListener(ev, () => updateComputerHum()));
+});
 
 // every tap inside the computer screen (icons, search, results, back/close, video buttons)
 function playComputerClick() {
@@ -298,6 +351,7 @@ function showScreen(name) {
   updateClockLoopForScreen(name);
   updateBathAmbience(name);
   updateComputerHum();
+  updateNasheedForComputer(name);
   saveProgress();
   const wall = COMPASS_WALL_OF_SCREEN[name];
   if (wall) {
