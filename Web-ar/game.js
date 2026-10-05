@@ -1354,7 +1354,7 @@ function setupInventoryDrag() {
     // anything — it just makes her think out loud; this line is deliberately
     // NOT saved as lastRoom4Line, so tapping Nor keeps repeating whatever she
     // last actually said instead of getting stuck on this aside
-    if (ghost.dataset.item === 'compass') {
+    if (ghost.dataset.item === 'compass' && !state.hintsFound.compass) {
       playRoom4Dialogue('لا أعرف كيف أستخدم البوصلة، يجب أن أبحث في الإنترنت.', null);
       state.compassHintGiven = true;
       syncCompassSuggestion();

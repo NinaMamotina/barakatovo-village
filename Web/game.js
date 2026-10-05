@@ -231,6 +231,7 @@ const state = {
   videoOpened: false, // true once the correct search result has been picked, opening the compass video
   searchOpened: false, // true once the internet icon has been clicked, showing the search bar
   compassHintGiven: false, // true once Nor has said she needs to look up how the compass works
+  compassIntroDone: false, // true once Nor has explained how to look for south after the compass first opens
   compassOpenLineDone: false, // true once Nor has said "now you can open the compass" after both hints were found
   inventory: [],
   talking: false,
@@ -248,7 +249,7 @@ const SAVED_FIELDS = [
   'norGreeted', 'norSeenInBath', 'cardsSolved', 'norLeftBath',
   'norOutfitStage', 'readyForNamaz', 'inventory', 'norRoom4Shown',
   'carpetPlaced', 'hintsFound', 'computerOn', 'videoOpened', 'searchOpened',
-  'compassHintGiven', 'compassOpenLineDone',
+  'compassHintGiven', 'compassOpenLineDone', 'compassIntroDone',
 ];
 
 function saveProgress() {
@@ -392,6 +393,7 @@ function showScreen(name) {
     updateCompassImage();
   }
   if (name === 'room4') setTimeout(maybePlayCompassOpenLine, 400);
+  if (name === 'room4') setTimeout(maybePlayCompassIntro, 600);
 }
 
 // once both direction hints are known and the player is back in the room view
@@ -425,6 +427,20 @@ function openCompassOverlay() {
   compassOverlayOpenedAt = Date.now();
   updateCompassImage();
   el('compass-overlay').classList.remove('hidden');
+  maybePlayCompassIntro();
+}
+
+// the first time the compass opens, in the room view where Nor stands, she
+// explains how to look for south (if it opened elsewhere, it waits until she is back)
+function maybePlayCompassIntro() {
+  if (state.compassIntroDone || el('compass-overlay').classList.contains('hidden')) return;
+  const active = document.querySelector('.screen.active');
+  if (!state.norRoom4Shown || !active || active.id !== 'scene-room4') return;
+  state.compassIntroDone = true;
+  saveProgress();
+  const text = 'Моя комната — квадрат, и у неё четыре стороны. Переходи от одной к другой стрелочками справа и слева. Давай найдём, с какой стороны юг!';
+  playRoom4Dialogue(text, null, 12000);
+  lastRoom4Line = { text, audioId: null };
 }
 el('compass-overlay-img').addEventListener('click', () => {
   // the tap that picked the compass up also ends with a click — ignore it
@@ -1569,7 +1585,9 @@ function setupInventoryDrag() {
   // item flies back home on the second click unless it's dropped on a
   // valid target (right now: the right item dropped on Nor dresses her up)
   function flyBack() {
-    playSfx(el('audio-backtoinv'), -6);
+    // opening the compass is a good thing to do, not a rejected drop: skip the "back to inventory" bump
+    const opensCompass = ghost.dataset.item === 'compass' && state.compassOpenLineDone;
+    if (!opensCompass) playSfx(el('audio-backtoinv'), -6);
     el('inventory-wrap').style.pointerEvents = '';
     // tapping the compass in the inventory doesn't dress Nor or place
     // anything — it just makes her think out loud; this line is deliberately
@@ -1578,7 +1596,8 @@ function setupInventoryDrag() {
     if (ghost.dataset.item === 'compass' && state.compassOpenLineDone) {
       // Nor has said the compass can be opened now: tapping it shows it
       openCompassOverlay();
-    } else if (ghost.dataset.item === 'compass') {
+    } else if (ghost.dataset.item === 'compass' && !state.hintsFound.compass) {
+      // once she has watched the compass video this aside is over for good
       playRoom4Dialogue('Я не знаю, как пользоваться компасом. Надо посмотреть в интернете.', el('audio-nor-compass'));
       state.compassHintGiven = true;
       syncCompassSuggestion();
@@ -2196,7 +2215,7 @@ el('nor-redress-img').addEventListener('click', () => {
 
 let lastRoom4Line = null; // { text, audioId } of the most recent thing Nor said in room4 — tapping her repeats it
 
-function playRoom4Dialogue(text, audioEl) {
+function playRoom4Dialogue(text, audioEl, holdMs) {
   if (activeDialogueStop) activeDialogueStop();
   const box = el('room4-dialogue');
   // Nor stands below the bubble once she has appeared by the door: tail points down at her
@@ -2222,7 +2241,7 @@ function playRoom4Dialogue(text, audioEl) {
     playRoom4Dialogue._t = setTimeout(() => {
       box.classList.add('hidden');
       if (activeDialogueStop === stopRoom4Dialogue) activeDialogueStop = null;
-    }, 8000);
+    }, holdMs || 8000);
   }
   activeDialogueStop = stopRoom4Dialogue;
 }
