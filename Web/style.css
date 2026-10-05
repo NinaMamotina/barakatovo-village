@@ -1737,3 +1737,18 @@ html, body {
   height: auto;
   filter: drop-shadow(0 8px 18px rgba(0,0,0,0.45));
 }
+
+/* the empty part of the computer screen while the search page is open: tapping it closes the search */
+#computer-search-backdrop {
+  position: absolute;
+  left: 10.25%;
+  top: 17.15%;
+  width: 78.3%;
+  height: 44%;
+  z-index: 6;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+#computer-search-backdrop.hidden { display: none !important; }

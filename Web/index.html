@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Деревня Баракатово</title>
-<link rel="stylesheet" href="style.css?v=150">
+<link rel="stylesheet" href="style.css?v=153">
 </head>
 <body>
 
@@ -160,7 +160,7 @@
 
       <div id="computer-video-wrap" class="hidden">
         <img id="computer-video-bg" src="assets/img/room3/video-bg.webp?v=2" alt="">
-        <video id="computer-video" playsinline poster="assets/img/room3/video-bg.webp?v=2">
+        <video id="computer-video" playsinline preload="metadata" poster="assets/img/room3/video-bg.webp?v=2">
           <source src="assets/video/compass-tutorial.mp4?v=2" type="video/mp4">
         </video>
       </div>
@@ -171,6 +171,7 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
       </button>
 
+      <button id="computer-search-backdrop" class="hidden" aria-label="Закрыть поиск"></button>
       <div id="computer-search-wrap" class="hidden">
         <button id="computer-search-bar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -477,6 +478,6 @@
 <audio preload="auto" id="audio-towel" src="assets/audio/towel.mp3"></audio>
 <audio preload="auto" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
 
-<script src="game.js?v=150"></script>
+<script src="game.js?v=152"></script>
 </body>
 </html>

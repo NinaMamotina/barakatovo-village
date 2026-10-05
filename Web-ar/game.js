@@ -805,10 +805,16 @@ function revealVideoPlayButton() {
     }
     el('computer-video-play').classList.remove('hidden');
   };
-  if (video.readyState >= 2) {
+  // phones don't preload video before the first tap, so 'canplay' may never
+  // fire on its own — metadata (or a short timeout) is enough to show the button
+  if (video.readyState >= 1) {
     show();
   } else {
-    video.addEventListener('canplay', show, { once: true });
+    let shown = false;
+    const showOnce = () => { if (shown) return; shown = true; show(); };
+    video.addEventListener('loadedmetadata', showOnce, { once: true });
+    video.addEventListener('canplay', showOnce, { once: true });
+    setTimeout(showOnce, 1200);
   }
 }
 

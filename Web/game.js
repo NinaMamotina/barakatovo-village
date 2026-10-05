@@ -912,7 +912,8 @@ function updateComputerVisual() {
   el('computer-search-wrap').classList.toggle('hidden', !showSearch);
   if (!showSearch) el('computer-search-suggestions').classList.add('hidden');
   // the video and the search page can both be closed back to the plain desktop
-  el('computer-view-close').classList.toggle('hidden', !(showVideo || showSearch));
+  el('computer-view-close').classList.toggle('hidden', !showVideo);
+  el('computer-search-backdrop').classList.toggle('hidden', !showSearch);
   updateComputerFrameVisibility();
 }
 
@@ -929,10 +930,16 @@ function revealVideoPlayButton() {
     }
     el('computer-video-play').classList.remove('hidden');
   };
-  if (video.readyState >= 2) {
+  // phones don't preload video before the first tap, so 'canplay' may never
+  // fire on its own — metadata (or a short timeout) is enough to show the button
+  if (video.readyState >= 1) {
     show();
   } else {
-    video.addEventListener('canplay', show, { once: true });
+    let shown = false;
+    const showOnce = () => { if (shown) return; shown = true; show(); };
+    video.addEventListener('loadedmetadata', showOnce, { once: true });
+    video.addEventListener('canplay', showOnce, { once: true });
+    setTimeout(showOnce, 1200);
   }
 }
 
@@ -1024,6 +1031,19 @@ el('hit-icon-documents').addEventListener('click', () => {
 el('computer-window-close').addEventListener('click', () => {
   playSfx(el('audio-move'), -12);
   closeComputerWindow();
+});
+function closeComputerSearchOrVideo() {
+  state.videoOpened = false;
+  state.searchOpened = false;
+  playSfx(el('audio-move'), -12);
+  stopRoom3Dialogue();
+  updateComputerVisual();
+  saveProgress();
+}
+el('computer-search-backdrop').addEventListener('click', closeComputerSearchOrVideo);
+// the search wrap is wider than the bar inside it: a tap on its bare part counts as empty screen too
+el('computer-search-wrap').addEventListener('click', (e) => {
+  if (e.target === el('computer-search-wrap')) closeComputerSearchOrVideo();
 });
 el('computer-view-close').addEventListener('click', () => {
   state.videoOpened = false;
