@@ -231,6 +231,7 @@ const state = {
   videoOpened: false, // true once the correct search result has been picked, opening the compass video
   searchOpened: false, // true once the internet icon has been clicked, showing the search bar
   compassHintGiven: false, // true once Nor has said she needs to look up how the compass works
+  compassWallLines: { room: false, room2: false, room3: false }, // walls where Nor has already said where north is
   compassIntroDone: false, // true once Nor has explained how to look for south after the compass first opens
   compassOpenLineDone: false, // true once Nor has said "now you can open the compass" after both hints were found
   inventory: [],
@@ -249,7 +250,7 @@ const SAVED_FIELDS = [
   'norGreeted', 'norSeenInBath', 'cardsSolved', 'norLeftBath',
   'norOutfitStage', 'readyForNamaz', 'inventory', 'norRoom4Shown',
   'carpetPlaced', 'hintsFound', 'computerOn', 'videoOpened', 'searchOpened',
-  'compassHintGiven', 'compassOpenLineDone', 'compassIntroDone',
+  'compassHintGiven', 'compassOpenLineDone', 'compassIntroDone', 'compassWallLines',
 ];
 
 function saveProgress() {
@@ -392,6 +393,8 @@ function showScreen(name) {
     compassWall = wall;
     updateCompassImage();
   }
+  updateNorFollow();
+  if (wall && !el('compass-overlay').classList.contains('hidden')) setTimeout(onCompassWallArrival, 350);
   if (name === 'room4') setTimeout(maybePlayCompassOpenLine, 400);
   if (name === 'room4') setTimeout(maybePlayCompassIntro, 600);
 }
@@ -430,6 +433,9 @@ function openCompassOverlay() {
   compassOverlayOpenedAt = Date.now();
   updateCompassImage();
   el('compass-overlay').classList.remove('hidden');
+  Object.keys(COMPASS_SFX_URLS).forEach(loadCompassSfx);
+  updateNorFollow();
+  if (state.compassIntroDone && !compassDemoRunning) onCompassWallArrival();
   maybePlayCompassIntro();
 }
 
@@ -449,38 +455,153 @@ function maybePlayCompassIntro() {
 // side of the world she is facing — with the four answers popping up over the compass
 const COMPASS_SPIN_ORDER = ['room', 'room2', 'room3', 'room4']; // red end: up, left, down, right
 let compassDemoTimers = [];
+let compassDemoRunning = false;
 function compassDemoLater(fn, ms) {
   compassDemoTimers.push(setTimeout(fn, ms));
 }
+
+// short sounds for the compass, played from decoded buffers so rapid ticks stay crisp
+const COMPASS_SFX_URLS = {
+  tick: 'assets/audio/compass-tick.m4a?v=1',
+  plip1: 'assets/audio/compass-plip1.m4a?v=1',
+  plip2: 'assets/audio/compass-plip2.m4a?v=1',
+  plip3: 'assets/audio/compass-plip3.m4a?v=1',
+  plip4: 'assets/audio/compass-plip4.m4a?v=1',
+};
+const compassSfxBuffers = {};
+const compassSfxLoading = {};
+function loadCompassSfx(name) {
+  const ctx = ensureMasterBus();
+  if (!ctx || compassSfxBuffers[name] || compassSfxLoading[name]) return;
+  compassSfxLoading[name] = true;
+  fetch(COMPASS_SFX_URLS[name])
+    .then(r => r.arrayBuffer())
+    .then(b => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej)))
+    .then(d => { compassSfxBuffers[name] = d; })
+    .catch(() => { compassSfxLoading[name] = false; });
+}
+function playCompassSfx(name, db) {
+  const ctx = ensureMasterBus();
+  if (!ctx) return;
+  const buf = compassSfxBuffers[name];
+  if (!buf) { loadCompassSfx(name); return; }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const g = ctx.createGain();
+  g.gain.value = dbToVol(db);
+  src.connect(g);
+  g.connect(masterLimiter);
+  src.start(0);
+}
+
+// every needle step of the spin ticks like a roulette wheel
 function setCompassFrame(wall) {
   el('compass-overlay-img').src = COMPASS_BY_WALL[wall];
+  playCompassSfx('tick', -14);
+}
+
+// Nor stands at the left of every wall while the compass is open; her words there
+// use one shared bubble (the per-room bubbles only exist inside their own rooms)
+let compassBubbleTimer = null;
+function showCompassBubble(text, ms) {
+  clearTimeout(compassBubbleTimer);
+  el('compass-bubble-text').textContent = text;
+  el('compass-bubble').classList.remove('hidden');
+  compassBubbleTimer = setTimeout(() => el('compass-bubble').classList.add('hidden'), ms || 8000);
+}
+function hideCompassBubble() {
+  clearTimeout(compassBubbleTimer);
+  el('compass-bubble').classList.add('hidden');
+}
+const COMPASS_WALL_SCREENS = ['scene-room', 'scene-room2', 'scene-room3'];
+function updateNorFollow() {
+  const active = document.querySelector('.screen.active');
+  const open = !el('compass-overlay').classList.contains('hidden');
+  const show = open && state.norRoom4Shown && active && COMPASS_WALL_SCREENS.includes(active.id);
+  el('nor-follow-img').classList.toggle('hidden', !show);
+}
+
+// the four answers: the player stands at each wall, reads the needle and says which
+// side of the world it faces; only once all four walls are answered does Nor tell
+// whether they were right
+const COMPASS_TRUTH = { room4: 'west', room: 'north', room2: 'east', room3: 'south' };
+let compassAnswers = { room: null, room2: null, room3: null, room4: null };
+function refreshDirButtons() {
+  document.querySelectorAll('.compass-dir-btn').forEach(b => {
+    const d = b.dataset.dir;
+    b.classList.toggle('selected', compassAnswers[compassWall] === d);
+    b.classList.toggle('used', Object.keys(compassAnswers).some(w => w !== compassWall && compassAnswers[w] === d));
+  });
+}
+function showDirButtons() {
+  el('compass-dir-buttons').classList.remove('hidden');
+  const btns = [...document.querySelectorAll('.compass-dir-btn')];
+  btns.forEach(b => b.classList.remove('shown'));
+  btns.forEach((b, k) => {
+    compassDemoLater(() => {
+      b.classList.add('shown');
+      playCompassSfx('plip' + (k + 1), -26);
+    }, 250 + k * 180);
+  });
+  refreshDirButtons();
 }
 function cancelCompassDemo() {
   compassDemoTimers.forEach(clearTimeout);
   compassDemoTimers = [];
+  compassDemoRunning = false;
   compassLock = false;
-  const roulette = el('audio-ruletka');
-  if (!roulette.paused) { roulette.pause(); roulette.currentTime = 0; }
+  hideCompassBubble();
   el('compass-dir-buttons').classList.add('hidden');
-  el('compass-overlay').classList.remove('dir-mode');
-  document.querySelectorAll('.compass-dir-btn').forEach(b => b.classList.remove('shown', 'selected'));
+  document.querySelectorAll('.compass-dir-btn').forEach(b => b.classList.remove('shown'));
 }
+function evaluateCompassAnswers() {
+  const walls = Object.keys(COMPASS_TRUTH);
+  if (!walls.every(w => compassAnswers[w])) return;
+  const ok = walls.every(w => compassAnswers[w] === COMPASS_TRUTH[w]);
+  if (ok) {
+    showCompassBubble('Получилось! Теперь мы точно знаем, где в комнате юг.', 8000);
+  } else {
+    showCompassBubble('Хм, что-то не сходится. Давай проверим ещё раз, стенка за стенкой!', 8000);
+    compassAnswers = { room: null, room2: null, room3: null, room4: null };
+    refreshDirButtons();
+  }
+}
+// what Nor says the first time she stands at each wall: where north is, and then
+// which side of the world she is facing
+const COMPASS_WALL_LINES = {
+  room: 'Здесь красная стрелка смотрит прямо вперёд — туда, где север. А какая сторона света тогда передо мной?',
+  room2: 'А здесь красная стрелка показывает влево, значит север слева от меня. Какая же сторона света тогда передо мной?',
+  room3: 'А здесь север оказался на противоположной стене! Тогда какая же сторона света передо мной?',
+};
+// arriving at another wall with the compass open: the answers pop up again, and the
+// first time at each wall Nor says where north is
+function onCompassWallArrival() {
+  if (el('compass-overlay').classList.contains('hidden') || compassDemoRunning || !state.compassIntroDone) return;
+  showDirButtons();
+  const line = COMPASS_WALL_LINES[compassWall];
+  if (line && !state.compassWallLines[compassWall]) {
+    state.compassWallLines[compassWall] = true;
+    saveProgress();
+    showCompassBubble(line, 9000);
+  }
+}
+
 function runCompassDemo() {
   cancelCompassDemo();
   compassLock = true;
+  compassDemoRunning = true;
+  Object.keys(COMPASS_SFX_URLS).forEach(loadCompassSfx);
   const line1 = 'Моя комната — квадрат, и у неё четыре стороны. Переходи от одной к другой стрелочками справа и слева. Давай найдём, с какой стороны юг!';
   const line2 = 'Так, держу компас ровно, как говорили на видео.';
   const line3 = 'Ага, красная стрелка справа, значит и северный полюс тоже справа. А какая часть света тогда передо мной?';
   const T1 = 12000, T2 = 5500, T3 = 9500;
   playRoom4Dialogue(line1, null, T1);
-  // roulette ticking as the needle starts spinning
-  playSfx(el('audio-ruletka'), -10);
   // fast spin for the whole first line
   let i = 0;
   for (let t = 0; t < T1; t += 90) {
     compassDemoLater(() => setCompassFrame(COMPASS_SPIN_ORDER[i++ % 4]), t);
   }
-  // second line: the spin slows down (gaps grow), ending exactly on the next frame boundary
+  // second line: the spin slows down (gaps grow)
   compassDemoLater(() => {
     playRoom4Dialogue(line2, null, T2);
     let t = 0, gap = 110;
@@ -492,32 +613,37 @@ function runCompassDemo() {
   }, T1);
   // third line: settled with the red end on the right, then the four answers
   compassDemoLater(() => {
-    setCompassFrame('room4');
+    el('compass-overlay-img').src = COMPASS_BY_WALL.room4;
     compassWall = 'room4';
+    compassLock = false;
+    compassDemoRunning = false;
     playRoom4Dialogue(line3, null, T3);
     lastRoom4Line = { text: line3, audioId: null };
-    el('compass-dir-buttons').classList.remove('hidden');
-    el('compass-overlay').classList.add('dir-mode');
-    document.querySelectorAll('.compass-dir-btn').forEach((b, k) => {
-      setTimeout(() => b.classList.add('shown'), 250 + k * 180);
-    });
-    compassLock = false;
+    showDirButtons();
   }, T1 + T2);
 }
 document.querySelectorAll('.compass-dir-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     playSfx(el('audio-move'), -12);
-    document.querySelectorAll('.compass-dir-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
+    const d = btn.dataset.dir;
+    Object.keys(compassAnswers).forEach(w => { if (compassAnswers[w] === d) compassAnswers[w] = null; });
+    compassAnswers[compassWall] = d;
+    refreshDirButtons();
+    evaluateCompassAnswers();
   });
 });
-el('compass-overlay-img').addEventListener('click', () => {
-  // the tap that picked the compass up also ends with a click — ignore it
-  if (Date.now() - compassOverlayOpenedAt < 400) return;
+function closeCompassOverlay() {
   playSfx(el('audio-move'), -12);
   cancelCompassDemo();
   el('compass-overlay').classList.add('hidden');
+  updateNorFollow();
+}
+el('compass-overlay-img').addEventListener('click', () => {
+  // the tap that picked the compass up also ends with a click — ignore it
+  if (Date.now() - compassOverlayOpenedAt < 400) return;
+  closeCompassOverlay();
 });
+el('compass-close-btn').addEventListener('click', closeCompassOverlay);
 
 function maybePlayCompassOpenLine() {
   if (state.compassOpenLineDone) return;
@@ -2613,6 +2739,36 @@ if (location.search.includes('debug')) {
     el('nor-redress-img').classList.remove('hidden');
     updateRoom4Access();
     showScreen('room2');
+  });
+  btn('Нор знает компас', () => {
+    // Nor has seen how the compass works and said it can be opened: tap the compass in the inventory
+    state.readyForNamaz = true;
+    state.norLeftBath = true;
+    state.norOutfitStage = NOR_OUTFIT_SEQUENCE.length;
+    state.norRoom4Shown = true;
+    state.carpetPlaced = true;
+    el('carpet-placed-img').classList.remove('hidden');
+    el('hints-wrap').classList.remove('hidden');
+    state.hintsFound = { kibla: true, compass: true };
+    updateHintsUI();
+    state.compassHintGiven = true;
+    state.compassOpenLineDone = true;
+    state.compassIntroDone = false;
+    state.compassWallLines = { room: false, room2: false, room3: false };
+    compassAnswers = { room: null, room2: null, room3: null, room4: null };
+    cancelCompassDemo();
+    el('compass-overlay').classList.add('hidden');
+    updateNorFollow();
+    el('nor-redress-img').classList.add('hidden');
+    el('nor-room4-img').classList.remove('hidden');
+    if (!state.inventory.some(it => it.id === 'compass')) {
+      collectItem('compass', 'Компас', 'assets/img/room4/compas-big.webp?v=1', 'compas-big-img', 'hit-compas-big');
+      el('compas-on-tumbochka-img').style.opacity = '0';
+    }
+    updateRoom4Access();
+    showScreen('room4');
+    el('inventory-wrap').classList.add('open');
+    saveProgress();
   });
   btn('Инвентарь', () => el('inventory-wrap').classList.toggle('open'));
   document.body.appendChild(panel);

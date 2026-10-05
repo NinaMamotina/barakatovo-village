@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Деревня Баракатово</title>
-<link rel="stylesheet" href="style.css?v=192">
+<link rel="stylesheet" href="style.css?v=196">
 </head>
 <body>
 
@@ -273,6 +273,7 @@
 
     <!-- the compass, opened from the inventory once Nor says it can be used -->
     <div id="compass-overlay" class="hidden">
+      <button id="compass-close-btn" aria-label="Убрать компас">‹</button>
       <div id="compass-dir-buttons" class="hidden">
         <button class="compass-dir-btn" data-dir="north">Север</button>
         <button class="compass-dir-btn" data-dir="south">Юг</button>
@@ -287,6 +288,15 @@
     </div>
     <!-- extra dimming behind the open compass: sits below Nor and her bubble so they stay in normal colour -->
     <div id="compass-dim"></div>
+    <!-- Nor walks along with the player (always at the left) while the compass is open -->
+    <img id="nor-follow-img" class="hidden" src="assets/img/redress/redress-6.webp?v=1" alt="">
+    <!-- her speech bubble for those walls -->
+    <div id="compass-bubble" class="hidden">
+      <div id="compass-bubble-body">
+        <p id="compass-bubble-text"></p>
+        <span id="compass-bubble-tail"></span>
+      </div>
+    </div>
 
     <div id="sticker-lightbox" class="hidden">
       <img id="sticker-lightbox-img" src="" alt="">
@@ -476,7 +486,6 @@
 <audio preload="auto" id="audio-nor32" src="assets/audio/nor32.m4a?v=3"></audio>
 <audio preload="auto" id="audio-computer-click" src="assets/audio/computer-click.m4a?v=1"></audio>
 <audio preload="auto" id="audio-compturn" src="assets/audio/compturn.mp3?v=1"></audio>
-<audio preload="auto" id="audio-ruletka" src="assets/audio/ruletka.m4a?v=1"></audio>
 <audio preload="auto" id="audio-clock-loop" src="assets/audio/clocks.mp3"></audio>
 <audio preload="auto" id="audio-buttonclick" src="assets/audio/buttonclick.wav"></audio>
 <audio preload="auto" id="audio-puzzlesolved" src="assets/audio/puzzlesolved.m4a?v=1"></audio>
@@ -493,6 +502,6 @@
 <audio preload="auto" id="audio-towel" src="assets/audio/towel.mp3"></audio>
 <audio preload="auto" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
 
-<script src="game.js?v=193"></script>
+<script src="game.js?v=196"></script>
 </body>
 </html>

@@ -1823,3 +1823,71 @@ html, body {
   pointer-events: none;
 }
 #compass-overlay:not(.hidden) + #compass-dim { display: block; }
+
+#nor-follow-img {
+  position: absolute;
+  left: 1%;
+  bottom: 8%;
+  height: 56%;
+  width: auto;
+  max-width: none;
+  z-index: 6;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+}
+#nor-follow-img.hidden { display: none !important; }
+#compass-bubble {
+  position: absolute;
+  left: 6%;
+  top: 12%;
+  width: 46%;
+  pointer-events: none;
+  z-index: 62;
+}
+#compass-bubble-body {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#compass-bubble-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#compass-bubble-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-right: 3px solid #a9793f;
+  border-bottom: 3px solid #a9793f;
+  transform: translateX(-50%) rotate(45deg);
+  bottom: -3.5%;
+  left: 20%;
+}
+#compass-bubble.hidden { display: none !important; }
+/* an answer already given to another wall */
+.compass-dir-btn.used { opacity: 0.55; }
+.compass-dir-btn.shown.used { opacity: 0.55; }
+
+/* the usual round arrow button, top right (left of the hints bulb), to put the compass away */
+#compass-close-btn {
+  position: absolute;
+  top: 3.5%;
+  right: 13%;
+  width: 9%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #f4ead9;
+  font-size: 4vmin;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 3;
+}
