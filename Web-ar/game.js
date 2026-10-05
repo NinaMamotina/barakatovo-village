@@ -853,6 +853,8 @@ el('hit-computer-power').addEventListener('click', () => {
     state.searchOpened = false;
   }
   playSfx(el('audio-buttonclick'), -8);
+  // switching on: the boot sound follows the click after a beat
+  if (state.computerOn) setTimeout(() => playSfx(el('audio-compturn'), -6), 100);
   updateComputerVisual();
   saveProgress();
 });
