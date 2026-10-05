@@ -192,6 +192,12 @@ function updateComputerHum() {
   ['play', 'playing', 'pause', 'ended'].forEach(ev => v.addEventListener(ev, () => updateComputerHum()));
 });
 
+// the "how does a compass work?" result appears in the search list as soon as
+// Nor has asked for it — no need to close and reopen the search first
+function syncCompassSuggestion() {
+  el('search-suggestion-compass').classList.toggle('hidden', !state.compassHintGiven);
+}
+
 // every tap inside the computer screen (icons, search, results, back/close, video buttons)
 function playComputerClick() {
   playSfx(el('audio-computer-click'), -6);
@@ -378,6 +384,7 @@ function showScreen(name) {
   updateBathAmbience(name);
   updateComputerHum();
   updateNasheedForComputer(name);
+  syncCompassSuggestion();
   saveProgress();
   const wall = COMPASS_WALL_OF_SCREEN[name];
   if (wall) {
@@ -989,6 +996,7 @@ function closeComputerWindow() {
 // the far view and the closeup — called on toggle and on save restore, so
 // the views can never disagree about whether the computer is on
 function updateComputerVisual() {
+  syncCompassSuggestion();
   const on = state.computerOn;
   el('computer-far-img').src = on
     ? 'assets/img/room3/computer-on-far.webp?v=1'
@@ -1573,6 +1581,7 @@ function setupInventoryDrag() {
     } else if (ghost.dataset.item === 'compass') {
       playRoom4Dialogue('Я не знаю, как пользоваться компасом. Надо посмотреть в интернете.', el('audio-nor-compass'));
       state.compassHintGiven = true;
+      syncCompassSuggestion();
       saveProgress();
     }
     const targetImg = sourceSlot.querySelector('img');
