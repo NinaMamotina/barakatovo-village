@@ -1616,7 +1616,7 @@ function carpetTappable() {
   return !!(state.carpetPlaced && all && state.carpetDir !== 's');
 }
 function updateCarpetArrows() {
-  el('carpet-placed-img').classList.toggle('carpet-tappable', carpetTappable());
+  el('carpet-rot-btn').classList.toggle('hidden', !carpetTappable());
 }
 function rotateCarpet(step) {
   const k = CARPET_ORDER.indexOf(state.carpetDir || 'w');
@@ -1631,6 +1631,10 @@ function rotateCarpet(step) {
 }
 // tapping the carpet turns it one step clockwise
 el('hit-carpet-drop').addEventListener('click', () => {
+  if (state.talking || !carpetTappable()) return;
+  rotateCarpet(1);
+});
+el('carpet-rot-btn').addEventListener('click', () => {
   if (state.talking || !carpetTappable()) return;
   rotateCarpet(1);
 });

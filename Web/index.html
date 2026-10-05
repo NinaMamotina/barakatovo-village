@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Деревня Баракатово</title>
-<link rel="stylesheet" href="style.css?v=201">
+<link rel="stylesheet" href="style.css?v=202">
 </head>
 <body>
 
@@ -217,6 +217,15 @@
       <img id="tumbochka-img" class="full" src="assets/img/room4/tumbochka-closed.webp?v=1" alt="">
       <img id="compas-on-tumbochka-img" class="full" src="assets/img/room4/compas-on-tumbochka.webp?v=1" alt="">
       <img id="carpet-placed-img" class="full hidden" src="assets/img/room4/carpet-w.webp?v=1" alt="">
+      <!-- half-circle turn arrow lying in the middle of the carpet: tap to turn it one step -->
+      <button id="carpet-rot-btn" class="hidden" aria-label="Повернуть коврик">
+        <svg viewBox="0 0 110 74" aria-hidden="true">
+          <path d="M14 56 A41 41 0 0 1 90 56" fill="none" stroke="#3a2a1a" stroke-width="15" stroke-linecap="round"/>
+          <polygon points="74,48 106,48 90,72" fill="#3a2a1a" stroke="#3a2a1a" stroke-width="6" stroke-linejoin="round"/>
+          <path d="M14 56 A41 41 0 0 1 90 56" fill="none" stroke="#f4ead9" stroke-width="9" stroke-linecap="round"/>
+          <polygon points="76,50 104,50 90,68" fill="#f4ead9"/>
+        </svg>
+      </button>
 
       <button id="hit-board" class="hit"></button>
       <button id="hit-tumbochka-top" class="hit"></button>
@@ -503,6 +512,6 @@
 <audio preload="auto" id="audio-towel" src="assets/audio/towel.mp3"></audio>
 <audio preload="auto" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
 
-<script src="game.js?v=201"></script>
+<script src="game.js?v=202"></script>
 </body>
 </html>
