@@ -1822,7 +1822,7 @@ html, body {
   background: rgba(20,16,12,0.5);
   pointer-events: none;
 }
-#compass-overlay:not(.hidden) + #compass-dim { display: block; }
+#compass-overlay:not(.hidden):not(.compass-suspended) + #compass-dim { display: block; }
 
 #nor-follow-img {
   position: absolute;
@@ -1875,11 +1875,11 @@ html, body {
 .compass-dir-btn.used { opacity: 0.55; }
 .compass-dir-btn.shown.used { opacity: 0.55; }
 
-/* the usual round arrow button, top right (left of the hints bulb), to put the compass away */
+/* the usual round arrow button, top left, to put the compass away */
 #compass-close-btn {
   position: absolute;
   top: 3.5%;
-  right: 13%;
+  left: 3.5%;
   width: 9%;
   aspect-ratio: 1/1;
   border-radius: 50%;
@@ -1891,3 +1891,15 @@ html, body {
   pointer-events: auto;
   z-index: 3;
 }
+
+#compass-overlay.compass-suspended { visibility: hidden; }
+#compass-fade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .6s ease;
+  z-index: 70;
+}
+#compass-fade.on { opacity: 1; }

@@ -226,7 +226,7 @@ const state = {
   readyForNamaz: false, // true once she's fully dressed and said it's time to pray — unlocks room3/room4
   norRoom4Shown: false, // true once Nor has appeared by the door in room4 after the carpet was found
   carpetPlaced: false, // true once the carpet has been dragged onto the floor between the door and the nightstand
-  hintsFound: { kibla: false, compass: false }, // which of the 3 direction hints the player has already seen
+  hintsFound: { kibla: false, compass: false, south: false }, // which of the 3 direction hints the player has already seen
   computerOn: false, // toggled by the power button — reflected on both the far view and the closeup
   videoOpened: false, // true once the correct search result has been picked, opening the compass video
   searchOpened: false, // true once the internet icon has been clicked, showing the search bar
@@ -394,7 +394,9 @@ function showScreen(name) {
     updateCompassImage();
   }
   updateNorFollow();
-  if (wall && !el('compass-overlay').classList.contains('hidden')) setTimeout(onCompassWallArrival, 350);
+  // in closeups (board, drawer, computer...) the compass steps aside: its corner arrow would sit on the usual back button
+  el('compass-overlay').classList.toggle('compass-suspended', !['room', 'room2', 'room3', 'room4'].includes(name));
+  if (['room', 'room2', 'room3', 'room4'].includes(name) && !el('compass-overlay').classList.contains('hidden')) setTimeout(onCompassWallArrival, 350);
   if (name === 'room4') setTimeout(maybePlayCompassOpenLine, 400);
   if (name === 'room4') setTimeout(maybePlayCompassIntro, 600);
 }
@@ -559,13 +561,38 @@ function evaluateCompassAnswers() {
   if (!walls.every(w => compassAnswers[w])) return;
   const ok = walls.every(w => compassAnswers[w] === COMPASS_TRUTH[w]);
   if (ok) {
-    showCompassBubble('Получилось! Теперь мы точно знаем, где в комнате юг.', 8000);
+    showCompassBubble('Получилось! Теперь я знаю: компьютер — это юг!', 8000);
+    if (!state.hintsFound.south) {
+      state.hintsFound.south = true;
+      updateHintsUI();
+      playSfx(el('audio-puzzlesolved'), -16);
+      saveProgress();
+    }
   } else {
-    showCompassBubble('Хм, что-то не сходится. Давай проверим ещё раз, стенка за стенкой!', 8000);
-    compassAnswers = { room: null, room2: null, room3: null, room4: null };
-    refreshDirButtons();
+    showCompassBubble('Хмм, кажется, я ошиблась. Ничего страшного — давай начнём сначала и всё проверим ещё раз!', 4500);
+    compassDemoLater(restartCompassPuzzle, 4700);
   }
 }
+
+// a wrong set of answers: the screen fades to black, the room is back at the door wall,
+// and the compass part starts over from "holding the compass steady"
+function restartCompassPuzzle() {
+  cancelCompassDemo();
+  compassDemoRunning = true;
+  compassAnswers = { room: null, room2: null, room3: null, room4: null };
+  el('compass-fade').classList.add('on');
+  compassDemoLater(() => {
+    el('compass-dir-buttons').classList.add('hidden');
+    hideCompassBubble();
+    showScreen('room4');
+    compassWall = 'room4';
+    compassLock = true;
+    el('compass-overlay-img').src = COMPASS_BY_WALL.room4;
+    el('compass-fade').classList.remove('on');
+  }, 700);
+  compassDemoLater(() => runCompassDemo(true), 1500);
+}
+
 // what Nor says the first time she stands at each wall: where north is, and then
 // which side of the world she is facing
 const COMPASS_WALL_LINES = {
@@ -586,25 +613,31 @@ function onCompassWallArrival() {
   }
 }
 
-function runCompassDemo() {
+function runCompassDemo(restart) {
   cancelCompassDemo();
   compassLock = true;
   compassDemoRunning = true;
   Object.keys(COMPASS_SFX_URLS).forEach(loadCompassSfx);
   const line1 = 'Моя комната — квадрат, и у неё четыре стороны. Переходи от одной к другой стрелочками справа и слева. Давай найдём, с какой стороны юг!';
-  const line2 = 'Так, держу компас ровно, как говорили на видео.';
+  const line2 = 'Так, держу компас ровно, как показывали в видео.';
   const line3 = 'Ага, красная стрелка справа, значит и северный полюс тоже справа. А какая часть света тогда передо мной?';
-  const T1 = 12000, T2 = 5500, T3 = 9500;
-  playRoom4Dialogue(line1, null, T1);
-  // fast spin for the whole first line
+  // on a restart the first explanation is skipped: only a short fast spin, then line 2
+  const T1 = restart ? 0 : 12000, T2 = 5500, T3 = 9500;
   let i = 0;
-  for (let t = 0; t < T1; t += 90) {
-    compassDemoLater(() => setCompassFrame(COMPASS_SPIN_ORDER[i++ % 4]), t);
+  if (!restart) {
+    playRoom4Dialogue(line1, null, T1);
+    // fast spin for the whole first line
+    for (let t = 0; t < T1; t += 90) {
+      compassDemoLater(() => setCompassFrame(COMPASS_SPIN_ORDER[i++ % 4]), t);
+    }
   }
   // second line: the spin slows down (gaps grow)
   compassDemoLater(() => {
     playRoom4Dialogue(line2, null, T2);
     let t = 0, gap = 110;
+    if (restart) {
+      for (; t < 1200; t += 90) compassDemoLater(() => setCompassFrame(COMPASS_SPIN_ORDER[i++ % 4]), t);
+    }
     while (t < T2 - 700) {
       compassDemoLater(() => setCompassFrame(COMPASS_SPIN_ORDER[i++ % 4]), t);
       t += gap;
@@ -624,7 +657,7 @@ function runCompassDemo() {
 }
 document.querySelectorAll('.compass-dir-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-buttonclick'), -8);
     const d = btn.dataset.dir;
     Object.keys(compassAnswers).forEach(w => { if (compassAnswers[w] === d) compassAnswers[w] = null; });
     compassAnswers[compassWall] = d;
@@ -1554,6 +1587,10 @@ function updateHintsUI() {
   const compassSlot = el('hint-slot-compass');
   compassSlot.classList.toggle('filled', !!state.hintsFound.compass);
   compassSlot.textContent = state.hintsFound.compass ? 'Красная стрелка компаса — Север' : '';
+
+  const southSlot = el('hint-slot-3');
+  southSlot.classList.toggle('filled', !!state.hintsFound.south);
+  southSlot.textContent = state.hintsFound.south ? 'Компьютер — это Юг!' : '';
 }
 let kiblaWhereSouthPending = false;
 el('sticker-lightbox').addEventListener('click', () => {
