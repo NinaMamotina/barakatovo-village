@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>قرية بركاتوفو</title>
 <link rel="preload" as="image" href="assets/img/intro/intro-1.jpg?v=2" fetchpriority="high">
-<link rel="stylesheet" href="style.css?v=165">
+<link rel="stylesheet" href="style.css?v=220">
 </head>
 <body>
 
@@ -114,7 +114,7 @@
       <img fetchpriority="low" id="wardrobe-img" class="full" src="assets/img/room2/wardrobe.webp?v=2" alt="">
       <img fetchpriority="low" id="bag-img" src="assets/img/room2/bag-item.webp?v=2" alt="">
       <img fetchpriority="low" id="boots-img" src="assets/img/room2/boots-item.webp?v=1" alt="">
-      <img fetchpriority="low" id="door-img" class="full" src="assets/img/room2/door-closed.webp?v=2" alt="">
+      <img fetchpriority="low" id="door-img" class="full" src="assets/img/room2/door-closed.webp?v=3" alt="">
       <img fetchpriority="low" id="nor-redress-img" class="hidden" src="assets/img/redress/redress-1.webp?v=1" alt="">
       <button id="hit-door" class="hit"></button>
       <button id="hit-wardrobe-drawer" class="hit"></button>
@@ -155,6 +155,7 @@
       <button id="hit-computer-power" class="hit"></button>
       <button id="hit-internet-icon" class="hit hidden"></button>
       <button id="hit-icon-study" class="hit hidden"></button>
+      <button id="hit-icon-koran" class="hit hidden"></button>
       <button id="hit-icon-photos" class="hit hidden"></button>
       <button id="hit-icon-documents" class="hit hidden"></button>
 
@@ -166,10 +167,12 @@
       </div>
       <img fetchpriority="low" id="computer-video-frame" class="full hidden" src="assets/img/room3/video-frame.webp?v=1" alt="">
       <img fetchpriority="low" id="computer-video-top-layer" class="full hidden" src="assets/img/room3/video-top-layer.webp?v=1" alt="">
+      <button id="computer-video-skip" class="hidden">تخطي</button>
       <button id="computer-video-play" class="hidden" aria-label="Play">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
       </button>
 
+      <button id="computer-search-backdrop" class="hidden" aria-label="إغلاق البحث"></button>
       <div id="computer-search-wrap" class="hidden">
         <button id="computer-search-bar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -189,23 +192,39 @@
         <img fetchpriority="low" id="computer-window-image" class="hidden" src="" alt="">
         <video id="computer-window-video" class="hidden" playsinline controls></video>
       </div>
+      <button id="computer-view-close" class="computer-window-nav hidden" aria-label="إغلاق">✕</button>
       <button id="computer-window-back" class="computer-window-nav hidden" aria-label="رجوع">‹</button>
       <button id="computer-window-close" class="computer-window-nav hidden" aria-label="إغلاق">✕</button>
+
+      <div id="room3-dialogue" class="hidden">
+        <div id="room3-dialogue-bubble">
+          <p id="room3-dialogue-text"></p>
+          <span id="room3-dialogue-tail"></span>
+          <button id="room3-dialogue-skip" class="dialogue-skip-btn">تخطي</button>
+        </div>
+      </div>
     </div>
 
     <!-- ===================== ROOM 4 (стена с дверью, тумбочкой и доской) ===================== -->
     <div id="scene-room4" class="screen">
       <img fetchpriority="low" class="full" src="assets/img/room4/wall4.webp?v=1" alt="">
-      <img fetchpriority="low" class="full" src="assets/img/room4/door-closed.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/door-closed.webp?v=3" alt="">
       <img fetchpriority="low" class="full" src="assets/img/room4/board-empty.webp?v=1" alt="">
-      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-1.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-1.webp?v=3" alt="">
       <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-2.webp?v=1" alt="">
       <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-3.webp?v=1" alt="">
-      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-4.webp?v=1" alt="">
-      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-5.webp?v=2" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-4.webp?v=3" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-5.webp?v=3" alt="">
       <img fetchpriority="low" id="tumbochka-img" class="full" src="assets/img/room4/tumbochka-closed.webp?v=1" alt="">
       <img fetchpriority="low" id="compas-on-tumbochka-img" class="full" src="assets/img/room4/compas-on-tumbochka.webp?v=1" alt="">
       <img fetchpriority="low" id="carpet-placed-img" class="full hidden" src="assets/img/room4/carpet-w.webp?v=1" alt="">
+      <!-- minimal turn button in the middle of the carpet: tap to turn it one step -->
+      <button id="carpet-rot-btn" class="hidden" aria-label="أدِر السجادة">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 12a7 7 0 1 1-2.1-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M17.6 3.4v4.2h-4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
 
       <button id="hit-board" class="hit"></button>
       <button id="hit-tumbochka-top" class="hit"></button>
@@ -246,21 +265,51 @@
       <button class="back-btn" data-back-board>‹</button>
       <div id="board-closeup-wrap">
         <img fetchpriority="low" class="full" src="assets/img/room4/board-empty.webp?v=1" alt="">
-        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-1.webp?v=1" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-1.webp?v=3" alt="">
         <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-2.webp?v=1" alt="">
         <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-3.webp?v=1" alt="">
-        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-4.webp?v=1" alt="">
-        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-5.webp?v=2" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-4.webp?v=3" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-5.webp?v=3" alt="">
         <button id="hit-board-sticker-1" class="hit"></button>
         <button id="hit-board-sticker-2" class="hit"></button>
         <button id="hit-board-sticker-3" class="hit"></button>
         <button id="hit-board-sticker-4" class="hit"></button>
         <button id="hit-board-sticker-5" class="hit"></button>
       </div>
+
+    </div>
+
+    <!-- the compass, opened from the inventory once Nor says it can be used -->
+    <div id="compass-overlay" class="hidden">
+      <button id="compass-close-btn" aria-label="إخفاء البوصلة">‹</button>
+      <div id="compass-dir-buttons" class="hidden">
+        <button class="compass-dir-btn" data-dir="north">الشمال</button>
+        <button class="compass-dir-btn" data-dir="south">الجنوب</button>
+        <button class="compass-dir-btn" data-dir="west">الغرب</button>
+        <button class="compass-dir-btn" data-dir="east">الشرق</button>
+      </div>
+      <div id="compass-stack">
+        <img fetchpriority="low" id="compass-overlay-img" src="assets/img/room4/compass-room4.webp?v=2" alt="بوصلة">
+        <!-- W and E are drawn on their own layer, swapped into the right places, over every needle picture -->
+        <img fetchpriority="low" id="compass-letters-img" src="assets/img/room4/compass-letters.webp?v=1" alt="">
+      </div>
+    </div>
+    <!-- extra dimming behind the open compass: sits below Nor and her bubble so they stay in normal colour -->
+    <div id="compass-dim"></div>
+    <div id="compass-fade"></div>
+    <!-- Nor walks along with the player (always at the left) while the compass is open -->
+    <img fetchpriority="low" id="nor-follow-img" class="hidden" src="assets/img/redress/redress-6.webp?v=1" alt="">
+    <!-- her speech bubble for those walls -->
+    <div id="compass-bubble" class="hidden">
+      <div id="compass-bubble-body">
+        <p id="compass-bubble-text"></p>
+        <span id="compass-bubble-tail"></span>
+      </div>
     </div>
 
     <div id="sticker-lightbox" class="hidden">
       <img fetchpriority="low" id="sticker-lightbox-img" src="" alt="">
+      <p id="sticker-lightbox-caption" class="hidden"></p>
     </div>
 
     <!-- ===================== خزانة الملابس (تكبير) ===================== -->
@@ -334,7 +383,18 @@
       <button id="cutscene-skip" class="cutscene-skip-btn">تخطي</button>
     </div>
 
-    <!-- ===================== مشهد البداية (تقطيع Start of the game.png) ===================== -->
+    <!-- ===================== КАТ-СЦЕНА «МОЛИТВА» (4 кадра по 4 секунды, затем «Продолжение следует») ===================== -->
+    <div id="scene-prayer" class="screen">
+      <img fetchpriority="low" class="prayer-frame" id="prayer-frame-1" src="assets/img/prayer/prayer-1.webp?v=1" alt="">
+      <img fetchpriority="low" class="prayer-frame" id="prayer-frame-2" src="assets/img/prayer/prayer-2.webp?v=1" alt="">
+      <img fetchpriority="low" class="prayer-frame" id="prayer-frame-3" src="assets/img/prayer/prayer-3.webp?v=1" alt="">
+      <img fetchpriority="low" class="prayer-frame" id="prayer-frame-4" src="assets/img/prayer/prayer-4.webp?v=1" alt="">
+      <div id="prayer-end"><p>يتبع…</p></div>
+      <!-- notice that the film only shows parts of the prayer; stays up for the whole cutscene -->
+      <div id="prayer-notice"><p>تنبيه! يعرض هذا المقطع بعض أجزاء الصلاة فقط، لذلك لا يعلّمك كيف تصلي. الترتيب الصحيح للصلاة يعلّمه لك الوالدان والإمام، فاسألهم عنه بالتأكيد.</p></div>
+    </div>
+
+    <!-- ===================== ВСТУПИТЕЛЬНАЯ СЦЕНА (нарезка Start of the game.png) ===================== -->
     <div id="scene-intro" class="screen">
       <img class="cutscene-frame active" id="intro-frame-1" fetchpriority="high" src="assets/img/intro/intro-1.jpg?v=2" alt="">
       <img class="cutscene-frame" id="intro-frame-2" src="assets/img/intro/intro-2.jpg?v=2" alt="">
@@ -405,12 +465,10 @@
 
 <audio preload="none" id="audio-azan" src="assets/audio/azan.m4a"></audio>
 <audio preload="none" id="audio-bathroom-amb" src="assets/audio/bathroom.mp3" loop></audio>
-<audio preload="none" id="audio-narrator-clock" src="assets/audio/narrator-clock.mp3"></audio>
-<audio preload="none" id="audio-narrator-cards" src="assets/audio/narrator-cards.mp3"></audio>
+<audio preload="none" id="audio-narrator-clock" src="assets/audio/narrator-clock.mp3?v=3"></audio>
+<audio preload="none" id="audio-narrator-cards" src="assets/audio/narrator-cards.mp3?v=3"></audio>
 <audio preload="none" id="audio-nasheed" src="assets/audio/nasheed_1.m4a?v=1" loop></audio>
 <audio preload="none" id="audio-narrator-reset" src="assets/audio/narrator-reset.mp3"></audio>
-<audio preload="none" id="audio-computer-click" src="assets/audio/computer-click.m4a?v=1"></audio>
-<audio preload="none" id="audio-compturn" src="assets/audio/compturn.mp3?v=1"></audio>
 <audio preload="none" id="audio-narrator-intro-1" src="assets/audio/narrator-intro-1.mp3?v=1"></audio>
 <audio preload="none" id="audio-narrator-intro-2" src="assets/audio/narrator-intro-2.mp3?v=1"></audio>
 <audio preload="none" id="audio-narrator-intro-3" src="assets/audio/narrator-intro-3.mp3?v=1"></audio>
@@ -425,6 +483,9 @@
 <audio preload="none" id="audio-nor7" src="assets/audio/nor7.m4a"></audio>
 <audio preload="none" id="audio-nor8" src="assets/audio/nor8.m4a"></audio>
 <audio preload="none" id="audio-nor9" src="assets/audio/nor9.m4a"></audio>
+<audio preload="none" id="audio-computer-click" src="assets/audio/computer-click.m4a?v=1"></audio>
+<audio preload="none" id="audio-prayer-all" src="assets/audio/prayer-all.m4a?v=3"></audio>
+<audio preload="none" id="audio-compturn" src="assets/audio/compturn.mp3?v=1"></audio>
 <audio preload="none" id="audio-clock-loop" src="assets/audio/clocks.mp3"></audio>
 <audio preload="none" id="audio-buttonclick" src="assets/audio/buttonclick.wav"></audio>
 <audio preload="none" id="audio-puzzlesolved" src="assets/audio/puzzlesolved.m4a?v=1"></audio>
@@ -435,6 +496,7 @@
 <audio preload="none" id="audio-tap" src="assets/audio/tap.m4a?v=1"></audio>
 <audio preload="none" id="audio-intro-village" src="assets/audio/village.m4a?v=1"></audio>
 <audio preload="none" id="audio-intro-family" src="assets/audio/family-murmur.m4a?v=2"></audio>
+<audio preload="none" id="audio-intro-sleep" src="assets/audio/nor-sleeping.m4a?v=1" loop></audio>
 <audio preload="none" id="audio-backtoinv" src="assets/audio/backtoinventory.m4a?v=1"></audio>
 <audio preload="none" id="audio-water-valve" src="assets/audio/water-valve.m4a?v=1"></audio>
 <audio preload="none" id="audio-water-in-sink" src="assets/audio/water-in-sink.m4a?v=1"></audio>
@@ -463,6 +525,6 @@
   document.head.appendChild(s);
 })();
 </script>
-<script src="game.js?v=238"></script>
+<script src="game.js?v=241"></script>
 </body>
 </html>

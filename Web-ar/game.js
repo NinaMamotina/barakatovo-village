@@ -260,7 +260,7 @@ function installAudioShims() {
   });
   // the opening sounds (and the click sounds) are decoded first, so they are ready the moment "Играть" is pressed
   const first = ['audio-tap', 'audio-move', 'audio-narrator-intro-1', 'audio-intro-village', 'audio-narrator-intro-2',
-    'audio-intro-family', 'audio-narrator-intro-3', 'audio-narrator-intro-4'];
+    'audio-intro-family', 'audio-narrator-intro-3', 'audio-intro-sleep', 'audio-narrator-intro-4'];
   audioPreloadQueue.sort((a, b) => {
     const ia = first.indexOf(a.id), ib = first.indexOf(b.id);
     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
@@ -382,7 +382,7 @@ function syncCompassSuggestion() {
   el('search-suggestion-compass').classList.toggle('hidden', !state.compassHintGiven);
 }
 
-// every tap inside the computer screen (icons, search, results, close, video buttons)
+// every tap inside the computer screen (icons, search, results, back/close, video buttons)
 function playComputerClick() {
   playSfx(el('audio-computer-click'), -6);
 }
@@ -402,31 +402,6 @@ function playSfx(audioEl, db, startAt) {
 
 installAudioShims();
 
-// computer pictures are decoded ahead of time: opening an app or a photo must never wait for a download
-afterFirstPicture(() => [
-  'assets/img/room3/apps/cookies.jpg?v=1',
-  'assets/img/room3/apps/doc-notes.jpg?v=1',
-  'assets/img/room3/apps/doc-room-map.webp?v=1',
-  'assets/img/room3/apps/games-blocked.jpg?v=1',
-  'assets/img/room3/apps/photo-1.jpg?v=1',
-  'assets/img/room3/apps/photo-2.jpg?v=1',
-  'assets/img/room3/apps/photo-3.jpg?v=1',
-  'assets/img/room3/apps/photo-4.jpg?v=1',
-  'assets/img/room3/apps/study.jpg?v=1',
-  'assets/img/room3/apps/weather.jpg?v=1',
-  'assets/img/room3/computer-off-closeup.webp?v=1',
-  'assets/img/room3/computer-off-far.webp?v=1',
-  'assets/img/room3/computer-on-closeup.webp?v=1',
-  'assets/img/room3/computer-on-far.webp?v=1',
-  'assets/img/room3/desk.webp?v=1',
-  'assets/img/room3/icons-closeup.webp?v=1',
-  'assets/img/room3/internet-icon-closeup.webp?v=1',
-  'assets/img/room3/video-bg.webp?v=2',
-  'assets/img/room3/video-frame.webp?v=1',
-  'assets/img/room3/video-top-layer.webp?v=1',
-  'assets/img/room3/wall3.jpg?v=1',
-].forEach(src => { const im = new Image(); im.src = src; }));
-
 const state = {
   hour: 12,
   minute: 0,
@@ -442,12 +417,17 @@ const state = {
   norOutfitStage: 0, // how many NOR_OUTFIT_SEQUENCE steps she's dressed so far, in order
   readyForNamaz: false, // true once she's fully dressed and said it's time to pray — unlocks room3/room4
   norRoom4Shown: false, // true once Nor has appeared by the door in room4 after the carpet was found
+  carpetDir: 'w', // which way the placed carpet points: n / e / s / w (s is the right one)
   carpetPlaced: false, // true once the carpet has been dragged onto the floor between the door and the nightstand
-  hintsFound: { kibla: false, compass: false }, // which of the 3 direction hints the player has already seen
+  hintsFound: { kibla: false, compass: false, south: false }, // which of the 3 direction hints the player has already seen
   computerOn: false, // toggled by the power button — reflected on both the far view and the closeup
   videoOpened: false, // true once the correct search result has been picked, opening the compass video
   searchOpened: false, // true once the internet icon has been clicked, showing the search bar
   compassHintGiven: false, // true once Nor has said she needs to look up how the compass works
+  compassWallLines: { room: false, room2: false, room3: false }, // walls where Nor has already said where north is
+  carpetTurnLineDone: false, // true once Nor has said the carpet must be turned towards the computer
+  compassIntroDone: false, // true once Nor has explained how to look for south after the compass first opens
+  compassOpenLineDone: false, // true once Nor has said "now you can open the compass" after both hints were found
   inventory: [],
   talking: false,
 };
@@ -463,8 +443,8 @@ const SAVED_FIELDS = [
   'hour', 'minute', 'clockCorrect', 'window', 'bed', 'norAwake',
   'norGreeted', 'norSeenInBath', 'cardsSolved', 'norLeftBath',
   'norOutfitStage', 'readyForNamaz', 'inventory', 'norRoom4Shown',
-  'carpetPlaced', 'hintsFound', 'computerOn', 'videoOpened', 'searchOpened',
-  'compassHintGiven',
+  'carpetPlaced', 'carpetDir', 'hintsFound', 'computerOn', 'videoOpened', 'searchOpened',
+  'compassHintGiven', 'compassOpenLineDone', 'compassIntroDone', 'compassWallLines', 'carpetTurnLineDone',
 ];
 
 function saveProgress() {
@@ -543,6 +523,8 @@ function restoreCollectedItemSprites() {
 // re-derives every visual from the restored state — always resumes on the
 // room screen (the stable hub) rather than mid-puzzle or mid-animation
 function applyLoadedState() {
+  // a carpet still sitting in the inventory can't have been placed yet
+  if (state.inventory.some(it => it.id === 'carpet')) state.carpetPlaced = false;
   updateBedSprite();
   updateWindowVisual();
   updateClockVisuals();
@@ -581,8 +563,10 @@ function applyLoadedState() {
 
   if (state.carpetPlaced) {
     el('carpet-placed-img').classList.remove('hidden');
+    updateCarpetImage();
     el('hints-wrap').classList.remove('hidden');
   }
+  updateCarpetArrows();
 
   updateComputerVisual();
 
@@ -593,6 +577,7 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   // the inventory only stays hidden on the opening cutscene; any other screen (e.g. a debug jump) brings it back
   if (name !== 'intro') el('inventory-wrap').classList.remove('hidden');
+  document.getElementById('stage').classList.toggle('prayer-mode', name === 'prayer');
   el('scene-' + name).classList.add('active');
   updateClockLoopForScreen(name);
   updateBathAmbience(name);
@@ -601,6 +586,372 @@ function showScreen(name) {
   syncCompassSuggestion();
   // the untouched opening picture is not a game worth resuming: nothing is saved until the game really starts
   if (name !== 'intro') saveProgress();
+  const wall = COMPASS_WALL_OF_SCREEN[name];
+  if (wall) {
+    compassWall = wall;
+    updateCompassImage();
+  }
+  updateNorFollow();
+  // in closeups (board, drawer, computer...) the compass steps aside: its corner arrow would sit on the usual back button
+  el('compass-overlay').classList.toggle('compass-suspended', !['room', 'room2', 'room3', 'room4'].includes(name));
+  if (['room', 'room2', 'room3', 'room4'].includes(name) && !el('compass-overlay').classList.contains('hidden')) setTimeout(onCompassWallArrival, 350);
+  if (name === 'room4') setTimeout(maybePlayCompassOpenLine, 400);
+  if (name === 'room4') setTimeout(maybeSayCarpetTurnLine, 900);
+  if (name === 'room4') setTimeout(maybePlayCompassIntro, 600);
+}
+
+// once both direction hints are known and the player is back in the room view
+// where Nor stands, she says by herself that the compass can be opened now;
+// waits for any line she is still speaking, and only ever happens once
+// the compass needle follows which wall of the room the player is facing:
+// room4 (door wall) faces west, then turning right: room (bed) north,
+// room2 east, room3 south — each wall has its own drawing
+const COMPASS_BY_WALL = {
+  room: 'assets/img/room4/compass-room.webp?v=2',
+  room2: 'assets/img/room4/compass-room2.webp?v=2',
+  room3: 'assets/img/room4/compass-room3.webp?v=2',
+  room4: 'assets/img/room4/compass-room4.webp?v=2',
+};
+afterFirstPicture(() => Object.values(COMPASS_BY_WALL).forEach(src => { new Image().src = src; }));
+// computer pictures are decoded ahead of time: opening an app or a photo must never wait for a download
+afterFirstPicture(() => [
+  'assets/img/room3/apps/cookies.jpg?v=1',
+  'assets/img/room3/apps/doc-notes.jpg?v=1',
+  'assets/img/room3/apps/doc-room-map.webp?v=1',
+  'assets/img/room3/apps/games-blocked.jpg?v=1',
+  'assets/img/room3/apps/photo-1.jpg?v=1',
+  'assets/img/room3/apps/photo-2.jpg?v=1',
+  'assets/img/room3/apps/photo-3.jpg?v=1',
+  'assets/img/room3/apps/photo-4.jpg?v=1',
+  'assets/img/room3/apps/study.jpg?v=1',
+  'assets/img/room3/apps/weather.jpg?v=1',
+  'assets/img/room3/computer-off-closeup.webp?v=1',
+  'assets/img/room3/computer-off-far.webp?v=1',
+  'assets/img/room3/computer-on-closeup.webp?v=1',
+  'assets/img/room3/computer-on-far.webp?v=1',
+  'assets/img/room3/desk.webp?v=1',
+  'assets/img/room3/icons-closeup.webp?v=1',
+  'assets/img/room3/internet-icon-closeup.webp?v=1',
+  'assets/img/room3/video-bg.webp?v=2',
+  'assets/img/room3/video-frame.webp?v=1',
+  'assets/img/room3/video-top-layer.webp?v=1',
+  'assets/img/room3/wall3.jpg?v=1',
+].forEach(src => { const im = new Image(); im.src = src; }));
+
+
+// closeups and side rooms keep the compass of the wall they belong to, so
+// jumping straight into one (or leaving the bathroom) never shows a wrong needle
+const COMPASS_WALL_OF_SCREEN = {
+  room: 'room', window: 'room', clock: 'room', schedule: 'room',
+  room2: 'room2', wardrobe: 'room2', mirror: 'room2', bath: 'room2', cards: 'room2',
+  room3: 'room3', computer: 'room3',
+  room4: 'room4', board: 'room4', 'tumbochka-drawer': 'room4', 'tumbochka-top': 'room4',
+};
+let compassWall = 'room4';
+// while Nor's compass demonstration runs the needle is driven by the animation, not by the wall
+let compassLock = false;
+function updateCompassImage() {
+  if (compassLock) return;
+  el('compass-overlay-img').src = COMPASS_BY_WALL[compassWall];
+}
+let compassOverlayOpenedAt = 0;
+function openCompassOverlay() {
+  playSfx(el('audio-tap'), -12);
+  compassOverlayOpenedAt = Date.now();
+  updateCompassImage();
+  el('compass-overlay').classList.remove('hidden');
+  Object.keys(COMPASS_SFX_URLS).forEach(loadCompassSfx);
+  updateNorFollow();
+  if (state.compassIntroDone && !compassDemoRunning) {
+    showDirButtons();
+    onCompassWallArrival();
+  }
+  maybePlayCompassIntro();
+}
+
+// the first time the compass opens, in the room view where Nor stands, she
+// explains how to look for south (if it opened elsewhere, it waits until she is back)
+function maybePlayCompassIntro() {
+  if (state.compassIntroDone || el('compass-overlay').classList.contains('hidden')) return;
+  const active = document.querySelector('.screen.active');
+  if (!state.norRoom4Shown || !active || active.id !== 'scene-room4') return;
+  state.compassIntroDone = true;
+  saveProgress();
+  runCompassDemo();
+}
+
+// Nor's demonstration: the needle spins fast while she explains, slows down while she
+// holds the compass still, then settles with the red end on the right and she asks which
+// side of the world she is facing — with the four answers popping up over the compass
+const COMPASS_SPIN_ORDER = ['room', 'room2', 'room3', 'room4']; // red end: up, left, down, right
+let compassDemoTimers = [];
+let compassDemoRunning = false;
+function compassDemoLater(fn, ms) {
+  compassDemoTimers.push(setTimeout(fn, ms));
+}
+
+// short sounds for the compass, played from decoded buffers so rapid ticks stay crisp
+const COMPASS_SFX_URLS = {
+  tick: 'assets/audio/compass-tick.m4a?v=1',
+  plip1: 'assets/audio/compass-plip1.m4a?v=1',
+  plip2: 'assets/audio/compass-plip2.m4a?v=1',
+  plip3: 'assets/audio/compass-plip3.m4a?v=1',
+  plip4: 'assets/audio/compass-plip4.m4a?v=1',
+};
+const compassSfxBuffers = {};
+const compassSfxLoading = {};
+function loadCompassSfx(name) {
+  const ctx = ensureMasterBus();
+  if (!ctx || compassSfxBuffers[name] || compassSfxLoading[name]) return;
+  compassSfxLoading[name] = true;
+  fetch(COMPASS_SFX_URLS[name])
+    .then(r => r.arrayBuffer())
+    .then(b => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej)))
+    .then(d => { compassSfxBuffers[name] = d; })
+    .catch(() => { compassSfxLoading[name] = false; });
+}
+function playCompassSfx(name, db) {
+  const ctx = ensureMasterBus();
+  if (!ctx) return;
+  const buf = compassSfxBuffers[name];
+  if (!buf) { loadCompassSfx(name); return; }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const g = ctx.createGain();
+  g.gain.value = dbToVol(db);
+  src.connect(g);
+  g.connect(masterLimiter);
+  src.start(0);
+}
+
+// every needle step of the spin ticks like a roulette wheel
+function setCompassFrame(wall) {
+  el('compass-overlay-img').src = COMPASS_BY_WALL[wall];
+  playCompassSfx('tick', -14);
+}
+
+// Nor stands at the left of every wall while the compass is open; her words there
+// use one shared bubble (the per-room bubbles only exist inside their own rooms)
+let compassBubbleTimer = null;
+function showCompassBubble(text, ms) {
+  clearTimeout(compassBubbleTimer);
+  el('compass-bubble-text').textContent = text;
+  el('compass-bubble').classList.remove('hidden');
+  compassBubbleTimer = setTimeout(() => el('compass-bubble').classList.add('hidden'), ms || 8000);
+}
+function hideCompassBubble() {
+  clearTimeout(compassBubbleTimer);
+  el('compass-bubble').classList.add('hidden');
+}
+const COMPASS_WALL_SCREENS = ['scene-room', 'scene-room2', 'scene-room3'];
+function updateNorFollow() {
+  const active = document.querySelector('.screen.active');
+  const open = !el('compass-overlay').classList.contains('hidden');
+  const show = open && state.norRoom4Shown && active && COMPASS_WALL_SCREENS.includes(active.id);
+  el('nor-follow-img').classList.toggle('hidden', !show);
+}
+
+// the four answers: the player stands at each wall, reads the needle and says which
+// side of the world it faces; only once all four walls are answered does Nor tell
+// whether they were right
+const COMPASS_TRUTH = { room4: 'west', room: 'north', room2: 'east', room3: 'south' };
+let compassAnswers = { room: null, room2: null, room3: null, room4: null };
+function refreshDirButtons() {
+  document.querySelectorAll('.compass-dir-btn').forEach(b => {
+    const d = b.dataset.dir;
+    b.classList.toggle('selected', compassAnswers[compassWall] === d);
+    b.classList.toggle('used', Object.keys(compassAnswers).some(w => w !== compassWall && compassAnswers[w] === d));
+  });
+}
+function showDirButtons() {
+  el('compass-dir-buttons').classList.remove('hidden');
+  const btns = [...document.querySelectorAll('.compass-dir-btn')];
+  btns.forEach(b => b.classList.remove('shown'));
+  btns.forEach((b, k) => {
+    compassDemoLater(() => {
+      b.classList.add('shown');
+      playCompassSfx('plip' + (k + 1), -26);
+    }, 250 + k * 180);
+  });
+  refreshDirButtons();
+}
+function cancelCompassDemo() {
+  compassDemoTimers.forEach(clearTimeout);
+  compassDemoTimers = [];
+  compassDemoRunning = false;
+  compassDemoStage = 0;
+  compassLock = false;
+  hideCompassBubble();
+  el('compass-dir-buttons').classList.add('hidden');
+  document.querySelectorAll('.compass-dir-btn').forEach(b => b.classList.remove('shown'));
+}
+function evaluateCompassAnswers() {
+  const walls = Object.keys(COMPASS_TRUTH);
+  if (!walls.every(w => compassAnswers[w])) return;
+  const ok = walls.every(w => compassAnswers[w] === COMPASS_TRUTH[w]);
+  if (ok) {
+    showCompassBubble('نجحت! الآن عرفت: الكمبيوتر في جهة الجنوب!', 8000);
+    if (!state.hintsFound.south) {
+      foundHint('south');
+      playSfx(el('audio-puzzlesolved'), -16);
+      saveProgress();
+    }
+  } else {
+    showCompassBubble('همم، يبدو أنني أخطأت. لا بأس، هيا نبدأ من جديد ونتحقق من كل شيء مرة أخرى!', 4500);
+    compassDemoLater(restartCompassPuzzle, 4700);
+  }
+}
+
+// a wrong set of answers: the screen fades to black, the room is back at the door wall,
+// and the compass part starts over from "holding the compass steady"
+function restartCompassPuzzle() {
+  cancelCompassDemo();
+  compassDemoRunning = true;
+  compassAnswers = { room: null, room2: null, room3: null, room4: null };
+  el('compass-fade').classList.add('on');
+  compassDemoLater(() => {
+    el('compass-dir-buttons').classList.add('hidden');
+    hideCompassBubble();
+    showScreen('room4');
+    compassWall = 'room4';
+    compassLock = true;
+    el('compass-overlay-img').src = COMPASS_BY_WALL.room4;
+    el('compass-fade').classList.remove('on');
+  }, 700);
+  compassDemoLater(() => runCompassDemo(true), 1500);
+}
+
+// what Nor says every time she stands at a wall with the compass in hand: where north is,
+// and which side of the world she is facing — so there is never silence between walls
+const COMPASS_WALL_LINES = {
+  room: 'هنا السهم الأحمر يشير إلى الأمام مباشرة، إلى حيث الشمال. فما هي الجهة التي أواجهها إذن؟',
+  room2: 'وهنا السهم الأحمر يشير إلى اليسار، أي أن الشمال عن يساري. فما هي الجهة التي أواجهها إذن؟',
+  room3: 'أما هنا فقد صار الشمال على الجدار المقابل! فما هي الجهة التي أواجهها إذن؟',
+  room4: 'آها، السهم الأحمر إلى اليمين، إذن الشمال أيضًا إلى اليمين. فما هي الجهة التي أواجهها إذن؟',
+};
+let lastCompassLine = null;
+// arriving at another wall with the compass open: the answers stay where they are (they only
+// pop up again when the compass is taken out anew); Nor says the line for this wall
+function onCompassWallArrival() {
+  if (el('compass-overlay').classList.contains('hidden') || compassDemoRunning || !state.compassIntroDone) return;
+  refreshDirButtons();
+  const line = COMPASS_WALL_LINES[compassWall];
+  if (line) {
+    lastCompassLine = line;
+    showCompassBubble(line, 9000);
+  }
+}
+// tapping Nor next to the compass repeats what she said last
+el('nor-follow-img').addEventListener('click', () => {
+  const line = lastCompassLine || COMPASS_WALL_LINES[compassWall];
+  if (line) showCompassBubble(line, 9000);
+});
+
+// the demo is a chain of three stages (explanation, "holding it steady", the question);
+// "Пропустить" on Nor's bubble jumps to the next stage, it never closes the compass
+const COMPASS_DEMO_LINES = [
+  'غرفتي مربعة ولها أربعة جدران. انتقل من جدار إلى آخر بالأسهم على اليمين وعلى اليسار. هيا نبحث عن جهة الجنوب!',
+  'حسنًا، سأمسك البوصلة بثبات كما رأيت في الفيديو.',
+  'آها، السهم الأحمر إلى اليمين، إذن الشمال أيضًا إلى اليمين. فما هي الجهة التي أواجهها إذن؟',
+];
+let compassDemoStage = 0;      // 1, 2 or 3 while the demo runs, 0 otherwise
+let compassDemoRestart = false;
+let compassSpinIndex = 0;
+function compassSpinStep() { setCompassFrame(COMPASS_SPIN_ORDER[compassSpinIndex++ % 4]); }
+function compassDemoGoTo(stage) {
+  compassDemoTimers.forEach(clearTimeout);
+  compassDemoTimers = [];
+  compassDemoStage = stage;
+  const T1 = 12000, T2 = 5500, T3 = 9500;
+  if (stage === 1) {
+    playRoom4Dialogue(COMPASS_DEMO_LINES[0], null, T1);
+    // fast spin for the whole first line
+    for (let t = 0; t < T1; t += 90) compassDemoLater(compassSpinStep, t);
+    compassDemoLater(() => compassDemoGoTo(2), T1);
+  } else if (stage === 2) {
+    playRoom4Dialogue(COMPASS_DEMO_LINES[1], null, T2);
+    // the spin slows down (gaps grow); on a restart it first spins fast for a moment
+    let t = 0, gap = 110;
+    if (compassDemoRestart) for (; t < 1200; t += 90) compassDemoLater(compassSpinStep, t);
+    while (t < T2 - 700) {
+      compassDemoLater(compassSpinStep, t);
+      t += gap;
+      gap = Math.round(gap * 1.28);
+    }
+    compassDemoLater(() => compassDemoGoTo(3), T2);
+  } else {
+    // settled with the red end on the right, then the question and the four answers
+    el('compass-overlay-img').src = COMPASS_BY_WALL.room4;
+    compassWall = 'room4';
+    compassLock = false;
+    compassDemoRunning = false;
+    compassDemoStage = 0;
+    playRoom4Dialogue(COMPASS_DEMO_LINES[2], null, T3);
+    lastRoom4Line = { text: COMPASS_DEMO_LINES[2], audioId: null };
+    showDirButtons();
+  }
+}
+function runCompassDemo(restart) {
+  cancelCompassDemo();
+  compassLock = true;
+  compassDemoRunning = true;
+  compassDemoRestart = !!restart;
+  Object.keys(COMPASS_SFX_URLS).forEach(loadCompassSfx);
+  compassDemoGoTo(restart ? 2 : 1);
+}
+document.querySelectorAll('.compass-dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    playSfx(el('audio-buttonclick'), -8);
+    const d = btn.dataset.dir;
+    Object.keys(compassAnswers).forEach(w => { if (compassAnswers[w] === d) compassAnswers[w] = null; });
+    compassAnswers[compassWall] = d;
+    refreshDirButtons();
+    evaluateCompassAnswers();
+  });
+});
+function closeCompassOverlay() {
+  playSfx(el('audio-tap'), -12);
+  cancelCompassDemo();
+  el('compass-overlay').classList.add('hidden');
+  updateNorFollow();
+  setTimeout(maybeSayCarpetTurnLine, 600);
+}
+
+// the compass has done its job: once it is put away Nor says the carpet must now be turned towards
+// the computer (that is the south). She says it where she stands, in the room with the door.
+function maybeSayCarpetTurnLine() {
+  if (!state.hintsFound.south || state.carpetTurnLineDone) return;
+  if (!el('compass-overlay').classList.contains('hidden')) return;
+  const active = document.querySelector('.screen.active');
+  if (!active || active.id !== 'scene-room4' || !state.norRoom4Shown) return;
+  if (!el('room4-dialogue').classList.contains('hidden')) { setTimeout(maybeSayCarpetTurnLine, 1000); return; }
+  state.carpetTurnLineDone = true;
+  saveProgress();
+  const text = 'الكمبيوتر في جهة الجنوب! إذن يجب أن أدير السجادة نحوه.';
+  playRoom4Dialogue(text, null, 7000);
+  lastRoom4Line = { text, audioId: null };
+}
+el('compass-overlay-img').addEventListener('click', () => {
+  // the tap that picked the compass up also ends with a click — ignore it
+  if (Date.now() - compassOverlayOpenedAt < 400) return;
+  closeCompassOverlay();
+});
+el('compass-close-btn').addEventListener('click', closeCompassOverlay);
+
+function maybePlayCompassOpenLine() {
+  if (state.compassOpenLineDone) return;
+  if (!state.hintsFound.kibla || !state.hintsFound.compass) return;
+  if (!state.norRoom4Shown) return;
+  if (document.querySelector('.screen.active').id !== 'scene-room4') return;
+  if (!el('room4-dialogue').classList.contains('hidden')) {
+    setTimeout(maybePlayCompassOpenLine, 800);
+    return;
+  }
+  state.compassOpenLineDone = true;
+  saveProgress();
+  const text = 'الآن يمكنني فتح البوصلة.';
+  playRoom4Dialogue(text, el('audio-nor32'));
+  lastRoom4Line = { text, audioId: 'audio-nor32' };
 }
 
 // ambient bathroom loop: plays across the whole wudu experience (bath, cards,
@@ -927,7 +1278,7 @@ let pendingBagFollowUp = null;
 // warm the browser's cache/decoder for the big room2/bath images so there's
 // no partial-paint flash the first time each screen is shown
 afterFirstPicture(() => [
-  'assets/img/room2/door-open.webp?v=2',
+  'assets/img/room2/door-open.webp?v=3',
   'assets/img/room2/bath-no-nor.jpg?v=1',
   'assets/img/room2/bath-nor.jpg?v=1',
   'assets/img/room2/wardrobe-open.webp?v=2',
@@ -997,23 +1348,23 @@ el('hit-room4-to-room').addEventListener('click', () => {
 // everything besides the compass video that can be opened on the computer
 // screen — icons on the desktop, and the decoy search results
 const COMPUTER_APPS = {
-  study: { type: 'image', src: 'assets/img/room3/apps/study.jpg?v=1' },
+  study: { type: 'image', src: 'assets/img/room3/apps/study.jpg?v=1', line: 'الخمسة هي فخري، والأربعة هي دافعي.', audio: 'audio-nor19' },
   photos: { type: 'menu', items: [
-    { label: 'صورة 1', src: 'assets/img/room3/apps/photo-1.jpg?v=1' },
-    { label: 'صورة 2', src: 'assets/img/room3/apps/photo-2.jpg?v=1' },
-    { label: 'صورة 3', src: 'assets/img/room3/apps/photo-3.jpg?v=1' },
-    { label: 'صورة 4', src: 'assets/img/room3/apps/photo-4.jpg?v=1' },
+    { label: 'صورة 1', src: 'assets/img/room3/apps/photo-1.jpg?v=1', line: 'هذه هي عائلتنا كلها. أتساءل كيف تمكّنا جميعًا من الظهور في صورة واحدة؟', audio: 'audio-nor12' },
+    { label: 'صورة 2', src: 'assets/img/room3/apps/photo-2.jpg?v=1', line: 'أبي يعرف كيف يساعد أيضًا. لكن أمي تقول أحيانًا إن العمل يزداد بعد مساعدته!', audio: 'audio-nor13' },
+    { label: 'صورة 3', src: 'assets/img/room3/apps/photo-3.jpg?v=1', line: 'نحن نتعلم القرآن مع العائلة كلها. أختي الصغيرة مريم تتعلم معنا أيضًا، لكنها تعلّمنا الصبر أكثر!', audio: 'audio-nor17' },
+    { label: 'صورة 4', src: 'assets/img/room3/apps/photo-4.jpg?v=1', line: 'أبي وياسين يبنيان بيتًا للعصافير. آمل ألا تكون العصافير صعبة الإرضاء!', audio: 'audio-nor15' },
   ] },
   documents: { type: 'menu', items: [
-    { label: 'ملاحظاتي', src: 'assets/img/room3/apps/doc-notes.jpg?v=1' },
-    { label: 'غرفتي', src: 'assets/img/room3/apps/doc-room-map.webp?v=1' },
+    { label: 'ملاحظاتي', src: 'assets/img/room3/apps/doc-notes.jpg?v=1', line: 'نسيت بعض الأسئلة تمامًا. جيد أنني فكرت في كتابتها.', audio: 'audio-nor14' },
+    { label: 'غرفتي', src: 'assets/img/room3/apps/doc-room-map.webp?v=1', line: 'هذه غرفتي المفضلة، مخططها من الأعلى. تجادل أبي وأخي الأكبر ياسين طويلًا في مكان كل شيء، لكن أمي هي التي رتّبت كل شيء بنفسها.', audio: 'audio-nor21' },
   ] },
 };
 const SEARCH_RESULT_APPS = {
-  cats: { type: 'video', src: 'assets/video/cats.mp4?v=2' },
-  games: { type: 'image', src: 'assets/img/room3/apps/games-blocked.jpg?v=1' },
-  weather: { type: 'image', src: 'assets/img/room3/apps/weather.jpg?v=1' },
-  cookies: { type: 'image', src: 'assets/img/room3/apps/cookies.jpg?v=1' },
+  cats: { type: 'video', src: 'assets/video/cats.mp4?v=2', line: 'يا له من قط لطيف!', audio: 'audio-nor23' },
+  games: { type: 'image', src: 'assets/img/room3/apps/games-blocked.jpg?v=1', line: 'أبي وضع قواعد جديدة مرة أخرى، وأحيانًا يزعجني هذا قليلًا، لكنني أقبل ذلك من أجل الله. أعلم أنه يفعل ذلك من أجلي، لأكبر إنسانة صالحة.', audio: 'audio-nor20' },
+  weather: { type: 'image', src: 'assets/img/room3/apps/weather.jpg?v=1', line: 'المطر رحمة من الله.', audio: 'audio-nor22' },
+  cookies: { type: 'image', src: 'assets/img/room3/apps/cookies.jpg?v=1', line: 'ما شاء الله! وصفة بسكويت! الآن أريد بسكويتًا فورًا!', audio: 'audio-nor16' },
 };
 
 // true while the generic app window (photos/documents/decoy results) is
@@ -1052,7 +1403,7 @@ function showComputerMenu(items) {
     const btn = document.createElement('button');
     btn.className = 'computer-window-menu-item';
     btn.textContent = item.label;
-    btn.addEventListener('click', () => showComputerContent(item, items));
+    btn.addEventListener('click', () => { playComputerClick(); showComputerContent(item, items); });
     menu.appendChild(btn);
   });
   menu.classList.remove('hidden');
@@ -1060,7 +1411,13 @@ function showComputerMenu(items) {
   el('computer-window-video').classList.add('hidden');
   el('computer-window-video').pause();
   el('computer-window-back').classList.add('hidden');
+  stopRoom3Dialogue();
 }
+
+// video content (the cats decoy) only plays its line once the video is
+// actually started, not the instant the window opens — everything else
+// speaks right away
+let computerVideoDialogue = null;
 
 function showComputerContent(item, parentItems) {
   el('computer-window-menu').classList.add('hidden');
@@ -1068,17 +1425,68 @@ function showComputerContent(item, parentItems) {
     el('computer-window-video').src = item.src;
     el('computer-window-video').classList.remove('hidden');
     el('computer-window-image').classList.add('hidden');
+    computerVideoDialogue = item.line ? { text: item.line, audioId: item.audio } : null;
   } else {
     el('computer-window-image').src = item.src;
     el('computer-window-image').classList.remove('hidden');
     el('computer-window-video').classList.add('hidden');
     el('computer-window-video').pause();
+    computerVideoDialogue = null;
   }
   el('computer-window-back').classList.toggle('hidden', !parentItems);
   if (parentItems) {
-    el('computer-window-back').onclick = () => showComputerMenu(parentItems);
+    el('computer-window-back').onclick = () => { playComputerClick(); showComputerMenu(parentItems); };
+  }
+  if (item.type !== 'video') {
+    if (item.line) {
+      playRoom3Dialogue(item.line, item.audio ? el(item.audio) : null);
+    } else {
+      stopRoom3Dialogue();
+    }
   }
 }
+el('computer-window-video').addEventListener('play', () => {
+  // only while the window with the video is really open
+  if (computerVideoDialogue && computerWindowOpen) {
+    playRoom3Dialogue(computerVideoDialogue.text, computerVideoDialogue.audioId ? el(computerVideoDialogue.audioId) : null);
+  }
+});
+
+function playRoom3Dialogue(text, audioEl) {
+  if (activeDialogueStop) activeDialogueStop();
+  const box = el('room3-dialogue');
+  el('room3-dialogue-text').textContent = text;
+  box.classList.remove('hidden');
+  clearTimeout(playRoom3Dialogue._t);
+  if (audioEl) {
+    routeToMaster(audioEl, true);
+    audioEl.currentTime = 0;
+    audioEl.volume = dbToVol(0);
+    audioEl.play();
+    const finish = () => {
+      box.classList.add('hidden');
+      audioEl.removeEventListener('ended', finish);
+      playRoom3Dialogue._stop = null;
+      if (activeDialogueStop === stopRoom3Dialogue) activeDialogueStop = null;
+    };
+    audioEl.addEventListener('ended', finish);
+    playRoom3Dialogue._stop = () => { audioEl.pause(); finish(); };
+  } else {
+    playRoom3Dialogue._stop = null;
+    playRoom3Dialogue._t = setTimeout(() => {
+      box.classList.add('hidden');
+      if (activeDialogueStop === stopRoom3Dialogue) activeDialogueStop = null;
+    }, 8000);
+  }
+  activeDialogueStop = stopRoom3Dialogue;
+}
+function stopRoom3Dialogue() {
+  clearTimeout(playRoom3Dialogue._t);
+  if (playRoom3Dialogue._stop) playRoom3Dialogue._stop();
+  else el('room3-dialogue').classList.add('hidden');
+  if (activeDialogueStop === stopRoom3Dialogue) activeDialogueStop = null;
+}
+el('room3-dialogue-skip').addEventListener('click', stopRoom3Dialogue);
 
 function closeComputerWindow() {
   computerWindowOpen = false;
@@ -1086,6 +1494,8 @@ function closeComputerWindow() {
   el('computer-window-back').classList.add('hidden');
   el('computer-window-close').classList.add('hidden');
   el('computer-window-video').pause();
+  computerVideoDialogue = null;
+  stopRoom3Dialogue();
   updateComputerFrameVisibility();
 }
 
@@ -1105,6 +1515,7 @@ function updateComputerVisual() {
   el('computer-internet-icon-img').classList.toggle('hidden', !on);
   el('hit-internet-icon').classList.toggle('hidden', !on);
   el('hit-icon-study').classList.toggle('hidden', !on);
+  el('hit-icon-koran').classList.toggle('hidden', !on);
   el('hit-icon-photos').classList.toggle('hidden', !on);
   el('hit-icon-documents').classList.toggle('hidden', !on);
   const showVideo = on && state.videoOpened;
@@ -1126,6 +1537,9 @@ function updateComputerVisual() {
   }
   el('computer-search-wrap').classList.toggle('hidden', !showSearch);
   if (!showSearch) el('computer-search-suggestions').classList.add('hidden');
+  // the video and the search page can both be closed back to the plain desktop
+  el('computer-view-close').classList.toggle('hidden', !showVideo);
+  el('computer-search-backdrop').classList.toggle('hidden', !showSearch);
   updateComputerFrameVisibility();
 }
 
@@ -1205,6 +1619,7 @@ el('computer-search-bar').addEventListener('click', () => {
   // question — before that the child would have no way to know it
   el('search-suggestion-compass').classList.toggle('hidden', !state.compassHintGiven);
   el('computer-search-suggestions').classList.toggle('hidden');
+  playRoom3Dialogue('كنت أريد البحث عن شيء واحد فقط، وقد اقترح عليّ الإنترنت عشرين!', el('audio-nor24'));
 });
 document.querySelectorAll('.search-suggestion').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1229,6 +1644,11 @@ el('hit-icon-study').addEventListener('click', () => {
   playComputerClick();
   openComputerWindow(COMPUTER_APPS.study);
 });
+el('hit-icon-koran').addEventListener('click', () => {
+  // no content or line for this one yet
+  if (state.talking) return;
+  playComputerClick();
+});
 el('hit-icon-photos').addEventListener('click', () => {
   if (state.talking) return;
   playComputerClick();
@@ -1243,6 +1663,27 @@ el('computer-window-close').addEventListener('click', () => {
   playComputerClick();
   closeComputerWindow();
 });
+function closeComputerSearchOrVideo() {
+  state.videoOpened = false;
+  state.searchOpened = false;
+  playComputerClick();
+  stopRoom3Dialogue();
+  updateComputerVisual();
+  saveProgress();
+}
+el('computer-search-backdrop').addEventListener('click', closeComputerSearchOrVideo);
+// the search wrap is wider than the bar inside it: a tap on its bare part counts as empty screen too
+el('computer-search-wrap').addEventListener('click', (e) => {
+  if (e.target === el('computer-search-wrap')) closeComputerSearchOrVideo();
+});
+el('computer-view-close').addEventListener('click', () => {
+  state.videoOpened = false;
+  state.searchOpened = false;
+  playComputerClick();
+  stopRoom3Dialogue();
+  updateComputerVisual();
+  saveProgress();
+});
 el('computer-video-play').addEventListener('click', () => {
   playComputerClick();
   const video = el('computer-video');
@@ -1250,11 +1691,22 @@ el('computer-video-play').addEventListener('click', () => {
   video.classList.remove('computer-video-ended-hide');
   video.play();
 });
+// the skip button only exists while the video is actually running; it jumps
+// straight to the end, which counts exactly like watching it to the finish
+el('computer-video').addEventListener('pause', () => el('computer-video-skip').classList.add('hidden'));
+el('computer-video-skip').addEventListener('click', () => {
+  playComputerClick();
+  const video = el('computer-video');
+  video.pause();
+  video.dispatchEvent(new Event('ended'));
+});
 el('computer-video').addEventListener('play', () => {
+  el('computer-video-skip').classList.remove('hidden');
   el('computer-video-play').classList.add('hidden');
   el('computer-video').classList.remove('computer-video-ended-hide');
 });
 el('computer-video').addEventListener('ended', () => {
+  el('computer-video-skip').classList.add('hidden');
   setVideoReplayIcon();
   el('computer-video-play').classList.remove('hidden');
   // the video's own last frame would otherwise stay on screen instead of
@@ -1265,6 +1717,7 @@ el('computer-video').addEventListener('ended', () => {
     foundHint('compass');
     playSfx(el('audio-puzzlesolved'), -16);
     saveProgress();
+    playRoom3Dialogue('آها، السهم الأحمر في البوصلة هو الشمال، سأتذكر ذلك.', el('audio-nor31'));
   }
 });
 
@@ -1293,8 +1746,8 @@ document.querySelectorAll('[data-back-tumbochka-drawer]').forEach(btn =>
       el('nor-room4-img').classList.remove('hidden');
       setTimeout(() => {
         const text = 'رائع، وجدت السجادة! عادة أضعها بين الباب والخزانة الصغيرة.';
-        playRoom4Dialogue(text, null);
-        lastRoom4Line = { text, audioId: null };
+        playRoom4Dialogue(text, el('audio-nor25'));
+        lastRoom4Line = { text, audioId: 'audio-nor25' };
       }, 200);
     }
   })
@@ -1321,17 +1774,32 @@ document.querySelectorAll('[data-back-board]').forEach(btn =>
   btn.addEventListener('click', () => {
     playSfx(el('audio-tap'), -12);
     showScreen('room4');
+    if (kiblaHintPending) {
+      kiblaHintPending = false;
+      foundHint('kibla');
+      playSfx(el('audio-puzzlesolved'), -16);
+      saveProgress();
+    }
+    if (kiblaWhereSouthPending) {
+      kiblaWhereSouthPending = false;
+      setTimeout(() => {
+        const text = 'القبلة إلى الجنوب. حسنًا، وأين الجنوب في الغرفة؟';
+        playRoom4Dialogue(text, el('audio-nor28'));
+        lastRoom4Line = { text, audioId: 'audio-nor28' };
+      }, 200);
+    }
   })
 );
 
 // each board sticker opens a bigger, readable version over a dim backdrop;
 // stickers 2 and 3 are both clusters of tiny icons, so they share one zoom
+let kiblaHintPending = false;
 const BOARD_STICKER_ZOOM = {
-  1: 'assets/img/room4/board-zoom-1.webp?v=1',
+  1: 'assets/img/room4/board-zoom-1.webp?v=3',
   2: 'assets/img/room4/board-zoom-23.webp?v=1',
   3: 'assets/img/room4/board-zoom-23.webp?v=1',
-  4: 'assets/img/room4/board-zoom-4.jpg?v=1',
-  5: 'assets/img/room4/board-zoom-5.webp?v=2',
+  4: 'assets/img/room4/board-zoom-4.jpg?v=3',
+  5: 'assets/img/room4/board-zoom-5.webp?v=3',
 };
 Object.keys(BOARD_STICKER_ZOOM).forEach(n => {
   el('hit-board-sticker-' + n).addEventListener('click', () => {
@@ -1339,13 +1807,38 @@ Object.keys(BOARD_STICKER_ZOOM).forEach(n => {
     playSfx(el('audio-tap'), -12);
     el('sticker-lightbox-img').src = BOARD_STICKER_ZOOM[n];
     el('sticker-lightbox').classList.remove('hidden');
+    // the compass sticker (1) was a gift from Nor's friend; she tells the story
+    if (n === '1') {
+      if (activeDialogueStop) activeDialogueStop();
+      const caption = el('sticker-lightbox-caption');
+      caption.textContent = 'أهدتني صديقتي هذا الملصق. ما شاء الله، ترسم بشكل جميل وتعرف الجغرافيا جيدًا.';
+      caption.classList.remove('hidden');
+      const stickerVoice = el('audio-nor29'); // no Arabic recording yet: the caption alone is shown
+      if (stickerVoice) {
+        routeToMaster(stickerVoice, true);
+        stickerVoice.currentTime = 0;
+        stickerVoice.volume = dbToVol(0);
+        stickerVoice.play();
+      }
+    }
+    // Nor reads the kibla note aloud (no caption: it is the text written on the note itself)
+    if (n === '4') {
+      if (activeDialogueStop) activeDialogueStop();
+      const kiblaVoice = el('audio-nor27'); // no Arabic recording yet: the caption alone is shown
+      if (kiblaVoice) {
+        routeToMaster(kiblaVoice, true);
+        kiblaVoice.currentTime = 0;
+        kiblaVoice.volume = dbToVol(0);
+        kiblaVoice.play();
+      }
+    }
     // the "кибла" note pinned to the board tells the player which way to
     // face for prayer — seeing it counts as finding the first of 3 hints,
     // but only once Nor has actually said the hints need finding
+    // the hint itself is only added (and its sound played) once the player
+    // steps back out to the room view — see the board's back button
     if (n === '4' && state.carpetPlaced && !state.hintsFound.kibla) {
-      foundHint('kibla');
-      playSfx(el('audio-puzzlesolved'), -16);
-      saveProgress();
+      kiblaHintPending = true;
     }
   });
 });
@@ -1373,10 +1866,70 @@ function updateHintsUI() {
   const compassSlot = el('hint-slot-compass');
   compassSlot.classList.toggle('filled', !!state.hintsFound.compass);
   compassSlot.textContent = state.hintsFound.compass ? 'السهم الأحمر للبوصلة — الشمال' : '';
+
+  const southSlot = el('hint-slot-3');
+  southSlot.classList.toggle('filled', !!state.hintsFound.south);
+  southSlot.textContent = state.hintsFound.south ? 'الكمبيوتر في الجنوب!' : '';
+  updateCarpetArrows();
 }
-el('sticker-lightbox').addEventListener('click', () => {
-  el('sticker-lightbox').classList.add('hidden');
+
+// with all three hints found, the placed carpet can be turned; the right way is towards the south
+const CARPET_ORDER = ['n', 'e', 's', 'w']; // clockwise
+function updateCarpetImage() {
+  el('carpet-placed-img').src = 'assets/img/room4/carpet-' + (state.carpetDir || 'w') + '.webp?v=1';
+}
+function carpetTappable() {
+  const all = state.hintsFound.kibla && state.hintsFound.compass && state.hintsFound.south;
+  return !!(state.carpetPlaced && all && state.carpetDir !== 's');
+}
+function updateCarpetArrows() {
+  el('carpet-rot-btn').classList.toggle('hidden', !carpetTappable());
+  el('carpet-placed-img').classList.toggle('carpet-tappable', carpetTappable());
+}
+function rotateCarpet(step) {
+  const k = CARPET_ORDER.indexOf(state.carpetDir || 'w');
+  state.carpetDir = CARPET_ORDER[(k + step + 4) % 4];
+  updateCarpetImage();
+  playSfx(el('audio-tap'), -12);
+  if (state.carpetDir === 's') {
+    playSfx(el('audio-puzzlesolved'), -16);
+    updateCarpetArrows();
+    // the carpet now points at the qibla: Nor reacts
+    setTimeout(() => {
+      const text = 'الحمد لله، السجادة تتجه نحو الجنوب، نحو القبلة مباشرة! الآن أنا مستعدة للصلاة.';
+      playRoom4Dialogue(text, null, 7000);
+      lastRoom4Line = { text, audioId: null };
+      // once she has finished speaking, the prayer cutscene begins
+      setTimeout(startPrayer, 7000 + 600);
+    }, 700);
+  }
+  saveProgress();
+}
+// tapping the carpet turns it one step clockwise
+el('hit-carpet-drop').addEventListener('click', () => {
+  if (state.talking || !carpetTappable()) return;
+  rotateCarpet(1);
 });
+el('carpet-rot-btn').addEventListener('click', () => {
+  if (state.talking || !carpetTappable()) return;
+  rotateCarpet(1);
+});
+let kiblaWhereSouthPending = false;
+el('sticker-lightbox').addEventListener('click', () => {
+  const wasKibla = el('sticker-lightbox-img').src.includes('board-zoom-4');
+  el('sticker-lightbox').classList.add('hidden');
+  ['audio-nor11', 'audio-nor27', 'audio-nor29'].forEach(id => {
+    const narrator = el(id);
+    if (!narrator) return;
+    narrator.pause();
+    narrator.currentTime = 0;
+  });
+  el('sticker-lightbox-caption').classList.add('hidden');
+  // Nor wonders where south is once the player steps back out to the room view,
+  // but only after she has already told the player about the 3 hints (carpet placed)
+  if (wasKibla && state.carpetPlaced) kiblaWhereSouthPending = true;
+});
+
 
 function updateBathVisual() {
   if (state.norLeftBath) {
@@ -1397,10 +1950,10 @@ el('hit-door').addEventListener('click', () => {
   doorBusy = true;
   playSfx(el('audio-door'), -7);
   updateBathVisual();
-  el('door-img').src = 'assets/img/room2/door-open.webp?v=2';
+  el('door-img').src = 'assets/img/room2/door-open.webp?v=3';
   setTimeout(() => {
     showScreen('bath');
-    el('door-img').src = 'assets/img/room2/door-closed.webp?v=2';
+    el('door-img').src = 'assets/img/room2/door-closed.webp?v=3';
     doorBusy = false;
     const azan = el('audio-azan');
     if (!azan.paused) {
@@ -1472,9 +2025,20 @@ document.querySelectorAll('[data-back-mirror]').forEach(btn =>
 
 function openBooklet() {
   if (state.talking) return;
+  if (activeDialogueStop) activeDialogueStop();
   playSfx(el('audio-tap'), -12);
   el('sticker-lightbox-img').src = 'assets/img/room2/wudu-booklet.jpg?v=1';
   el('sticker-lightbox').classList.remove('hidden');
+  const caption = el('sticker-lightbox-caption');
+  caption.textContent = 'جيد أن أمي طبعت لي هذه الورقة. أحيانًا أنسى ترتيب الوضوء.';
+  caption.classList.remove('hidden');
+  const narrator = el('audio-nor11'); // no Arabic recording yet: the caption alone is shown
+  if (narrator) {
+    routeToMaster(narrator, true);
+    narrator.currentTime = 0;
+    narrator.volume = dbToVol(0);
+    narrator.play();
+  }
 }
 // the booklet is tucked into the mirror on the wall, but only readable once
 // zoomed in — tapping it on the wall just zooms to the mirror, like tapping
@@ -1502,15 +2066,15 @@ function buildInventoryUI() {
   });
   setupInventoryDrag();
 
-  el('hints-toggle').addEventListener('click', () => {
-    playSfx(el('audio-tap'), -12);
-    el('hints-bar').classList.toggle('hidden');
-  });
-
   el('lang-gear').addEventListener('click', () => {
     playSfx(el('audio-tap'), -12);
     el('lang-menu').classList.toggle('hidden');
     el('lang-submenu').classList.add('hidden'); // closed by default each time the menu opens
+  });
+
+  el('hints-toggle').addEventListener('click', () => {
+    playSfx(el('audio-tap'), -12);
+    el('hints-bar').classList.toggle('hidden');
   });
 
   el('lang-menu-toggle').addEventListener('click', () => {
@@ -1579,14 +2143,20 @@ function setupInventoryDrag() {
   // item flies back home on the second click unless it's dropped on a
   // valid target (right now: the right item dropped on Nor dresses her up)
   function flyBack() {
-    playSfx(el('audio-backtoinv'), -6);
+    // opening the compass is a good thing to do, not a rejected drop: skip the "back to inventory" bump
+    const opensCompass = ghost.dataset.item === 'compass' && state.compassOpenLineDone && !state.hintsFound.south;
+    if (!opensCompass) playSfx(el('audio-backtoinv'), -6);
     el('inventory-wrap').style.pointerEvents = '';
     // tapping the compass in the inventory doesn't dress Nor or place
     // anything — it just makes her think out loud; this line is deliberately
     // NOT saved as lastRoom4Line, so tapping Nor keeps repeating whatever she
     // last actually said instead of getting stuck on this aside
-    if (ghost.dataset.item === 'compass' && !state.hintsFound.compass) {
-      playRoom4Dialogue('لا أعرف كيف أستخدم البوصلة، يجب أن أبحث في الإنترنت.', null);
+    if (ghost.dataset.item === 'compass' && state.compassOpenLineDone && !state.hintsFound.south) {
+      // Nor has said the compass can be opened now: tapping it shows it
+      openCompassOverlay();
+    } else if (ghost.dataset.item === 'compass' && !state.hintsFound.compass) {
+      // once she has watched the compass video this aside is over for good
+      playRoom4Dialogue('لا أعرف كيف أستخدم البوصلة، يجب أن أبحث في الإنترنت.', el('audio-nor-compass'));
       state.compassHintGiven = true;
       syncCompassSuggestion();
       saveProgress();
@@ -1663,6 +2233,8 @@ function setupInventoryDrag() {
       el('inventory-wrap').style.pointerEvents = '';
       state.carpetPlaced = true;
       el('carpet-placed-img').classList.remove('hidden');
+      updateCarpetImage();
+      updateCarpetArrows();
       playSfx(el('audio-tap'), -12);
       removeInventoryItem('carpet');
       ghost.remove();
@@ -1672,8 +2244,8 @@ function setupInventoryDrag() {
       inventoryDragActive = false;
       el('hints-wrap').classList.remove('hidden');
       const text = 'الآن يجب أن أضعها في الاتجاه الصحيح. لمعرفة هذا الاتجاه، في الغرفة 3 تلميحات. يجب جمعها كلها.';
-      playRoom4Dialogue(text, null);
-      lastRoom4Line = { text, audioId: null };
+      playRoom4Dialogue(text, el('audio-nor26'));
+      lastRoom4Line = { text, audioId: 'audio-nor26' };
       return;
     }
 
@@ -1863,8 +2435,7 @@ const CARD_SLOTS = [
 ];
 // horizontal arrows within each row, plus a trailing/leading pair at each
 // row break (like a text line-wrap: the row "runs off" to the right and
-// the next row "arrives" from the left, instead of a down arrow) — kept
-// left-to-right on purpose, same as the Russian version (not mirrored)
+// the next row "arrives" from the left, instead of a down arrow)
 const CARD_ARROWS = [
   { left: 36.83, top: 27.67, glyph: '→' },
   { left: 63.16, top: 27.67, glyph: '→' },
@@ -2204,7 +2775,7 @@ el('nor-redress-img').addEventListener('click', () => {
 
 let lastRoom4Line = null; // { text, audioId } of the most recent thing Nor said in room4 — tapping her repeats it
 
-function playRoom4Dialogue(text, audioEl) {
+function playRoom4Dialogue(text, audioEl, holdMs) {
   if (activeDialogueStop) activeDialogueStop();
   const box = el('room4-dialogue');
   // Nor stands below the bubble once she has appeared by the door: tail points down at her
@@ -2230,7 +2801,7 @@ function playRoom4Dialogue(text, audioEl) {
     playRoom4Dialogue._t = setTimeout(() => {
       box.classList.add('hidden');
       if (activeDialogueStop === stopRoom4Dialogue) activeDialogueStop = null;
-    }, 8000);
+    }, holdMs || 8000);
   }
   activeDialogueStop = stopRoom4Dialogue;
 }
@@ -2240,7 +2811,14 @@ function stopRoom4Dialogue() {
   else el('room4-dialogue').classList.add('hidden');
   if (activeDialogueStop === stopRoom4Dialogue) activeDialogueStop = null;
 }
-el('room4-dialogue-skip').addEventListener('click', stopRoom4Dialogue);
+el('room4-dialogue-skip').addEventListener('click', () => {
+  // during the compass demo, skipping a phrase moves on to the next one; the compass stays
+  if (compassDemoRunning && compassDemoStage >= 1 && compassDemoStage <= 2) {
+    compassDemoGoTo(compassDemoStage + 1);
+    return;
+  }
+  stopRoom4Dialogue();
+});
 
 el('nor-room4-img').addEventListener('click', () => {
   if (lastRoom4Line) {
@@ -2322,6 +2900,88 @@ function playCutscene() {
 
 el('cutscene-skip').addEventListener('click', skipCutscene);
 
+// ---------------- prayer cutscene ----------------
+// one continuous recording (opening of the prayer, two "Allahu akbar", closing of the prayer, joined with
+// room tone so there are no dead gaps); each picture appears exactly when its part begins.
+// then "to be continued" with the solved-puzzle chime
+const PRAYER_PART_STARTS = [0, 7.27, 9.64, 12.0]; // seconds inside prayer-all.m4a
+const PRAYER_TOTAL_SECONDS = 19.85;
+const PRAYER_VOLUME_DB = -12; // the voice sits well under the usual level
+let prayerTimers = [];
+let nasheedPausedForPrayer = false;
+function prayerLater(fn, ms) { prayerTimers.push(setTimeout(fn, ms)); }
+function stopPrayerAudio() {
+  const a = el('audio-prayer-all');
+  a.pause();
+  a.currentTime = 0;
+  const warn = document.getElementById('audio-prayer-warning');
+  if (warn) { warn.pause(); warn.currentTime = 0; }
+}
+function startPrayer() {
+  prayerTimers.forEach(clearTimeout);
+  prayerTimers = [];
+  stopPrayerAudio();
+  // fade to black, swap the scene while dark, fade back in
+  el('compass-fade').classList.add('on');
+  prayerLater(() => {
+    cancelCompassDemo();
+    el('compass-overlay').classList.add('hidden');
+    updateNorFollow();
+    hideCompassBubble();
+    stopRoom4Dialogue();
+    // the nasheed on the loop fades out for the prayer
+    const nash = el('audio-nasheed');
+    if (!nash.paused) {
+      nasheedPausedForPrayer = true;
+      fadeAudioVolume(nash, 0, 1500, () => nash.pause());
+    }
+    showScreen('prayer');
+    document.querySelectorAll('.prayer-frame').forEach(f => f.classList.remove('shown'));
+    el('prayer-end').classList.remove('shown');
+    el('prayer-notice').classList.remove('shown', 'speaking');
+    el('prayer-frame-1').classList.add('shown');
+    el('compass-fade').classList.remove('on');
+  }, 700);
+  const t0 = 1400;
+  // the notice about the prayer being shown only in parts is up for the whole film
+  prayerLater(() => el('prayer-notice').classList.add('shown'), t0);
+  const a = el('audio-prayer-all');
+  const total = (a.duration && isFinite(a.duration)) ? a.duration : PRAYER_TOTAL_SECONDS;
+  prayerLater(() => {
+    routeToMaster(a, true);
+    a.currentTime = 0;
+    a.volume = dbToVol(PRAYER_VOLUME_DB);
+    a.play();
+  }, t0);
+  for (let k = 2; k <= 4; k++) {
+    prayerLater(() => el('prayer-frame-' + k).classList.add('shown'), t0 + PRAYER_PART_STARTS[k - 1] * 1000);
+  }
+  prayerLater(() => {
+    el('prayer-end').classList.add('shown');
+    playSfx(el('audio-puzzlesolved'), -16);
+    // the narrator says "Внимание": the nasheed returns with a long, deep fade-in
+    if (nasheedPausedForPrayer) {
+      nasheedPausedForPrayer = false;
+      const nash = el('audio-nasheed');
+      routeToMaster(nash, false);
+      nash.volume = 0;
+      nash.play();
+      fadeAudioVolume(nash, dbToVol(-16), 6000);
+    }
+    // as "to be continued" appears, a voice reads the notice out (recording still to come)
+    const warn = document.getElementById('audio-prayer-warning');
+    if (warn) {
+      // the narrator reads it; the glow around the notice pulses while she speaks
+      routeToMaster(warn, 'narrator');
+      warn.currentTime = 0;
+      warn.volume = dbToVol(-6);
+      warn.play();
+      el('prayer-notice').classList.add('speaking');
+      warn.onended = () => el('prayer-notice').classList.remove('speaking');
+    }
+  }, t0 + total * 1000 + 800);
+}
+
 // ---------------- intro cutscene ----------------
 
 const INTRO_NARRATORS = {
@@ -2355,6 +3015,7 @@ function rampAudioVolume(a, toVol, ms, done) {
 const INTRO_AMBIENCE = {
   village: { id: 'audio-intro-village', db: -3 },
   family: { id: 'audio-intro-family', db: 0 },
+  sleep: { id: 'audio-intro-sleep', db: -9 }, // Nor asleep on the last picture; loops until "Yes" is pressed
 };
 function introAmbienceStart(key, fadeMs) {
   const cfg = INTRO_AMBIENCE[key], a = el(cfg.id);
@@ -2368,8 +3029,9 @@ function introAmbienceFadeOut(key, fadeMs) {
   const a = el(INTRO_AMBIENCE[key].id);
   rampAudioVolume(a, 0, fadeMs, () => a.pause());
 }
-function introAmbienceStopAll() {
-  Object.values(INTRO_AMBIENCE).forEach(cfg => {
+function introAmbienceStopAll(except) {
+  Object.entries(INTRO_AMBIENCE).forEach(([key, cfg]) => {
+    if (key === except) return;
     const a = el(cfg.id);
     clearInterval(introRampTimers.get(a));
     a.pause();
@@ -2377,8 +3039,8 @@ function introAmbienceStopAll() {
   });
 }
 
-function stopIntroNarrators() {
-  introAmbienceStopAll();
+function stopIntroNarrators(keepAmbience) {
+  introAmbienceStopAll(keepAmbience);
   Object.values(INTRO_NARRATORS).forEach(id => {
     const a = el(id);
     a.pause();
@@ -2414,6 +3076,11 @@ function introDarkenTo(n) {
     introAmbienceFadeOut('village', 700);
     introAmbienceStart('family', 350);
   }
+  // on the last picture Nor is asleep: her breathing takes over from the murmur and loops until "Yes"
+  if (n === 4) {
+    introAmbienceFadeOut('family', 700);
+    introAmbienceStart('sleep', 350);
+  }
   introTimeouts.push(setTimeout(() => {
     showIntroFrame(n);
     playIntroNarrator(n);
@@ -2432,9 +3099,9 @@ function startIntro() {
   showIntroFrame(1);
 }
 
-function finishIntro() {
+function finishIntro(keepAmbience) {
   clearIntroTimeouts();
-  stopIntroNarrators();
+  stopIntroNarrators(keepAmbience);
   el('inventory-wrap').classList.remove('hidden');
   showScreen('room');
 }
@@ -2449,7 +3116,8 @@ el('intro-play-btn').addEventListener('click', () => {
 
 el('intro-yes-btn').addEventListener('click', () => {
   playSfx(el('audio-tap'), -12);
-  finishIntro();
+  introAmbienceFadeOut('sleep', 700); // the breathing fades away instead of cutting off
+  finishIntro('sleep');
 });
 
 // ---------------- init ----------------
@@ -2579,6 +3247,37 @@ if (location.search.includes('debug')) {
     updateRoom4Access();
     showScreen('room2');
   });
+  btn('Нор знает компас', () => {
+    // Nor has seen how the compass works and said it can be opened: tap the compass in the inventory
+    state.readyForNamaz = true;
+    state.norLeftBath = true;
+    state.norOutfitStage = NOR_OUTFIT_SEQUENCE.length;
+    state.norRoom4Shown = true;
+    state.carpetPlaced = true;
+    el('carpet-placed-img').classList.remove('hidden');
+    el('hints-wrap').classList.remove('hidden');
+    state.hintsFound = { kibla: true, compass: true };
+    updateHintsUI();
+    state.compassHintGiven = true;
+    state.compassOpenLineDone = true;
+    state.compassIntroDone = false;
+    state.compassWallLines = { room: false, room2: false, room3: false };
+    compassAnswers = { room: null, room2: null, room3: null, room4: null };
+    cancelCompassDemo();
+    el('compass-overlay').classList.add('hidden');
+    updateNorFollow();
+    el('nor-redress-img').classList.add('hidden');
+    el('nor-room4-img').classList.remove('hidden');
+    if (!state.inventory.some(it => it.id === 'compass')) {
+      collectItem('compass', 'بوصلة', 'assets/img/room4/compas-big.webp?v=1', 'compas-big-img', 'hit-compas-big');
+      el('compas-on-tumbochka-img').style.opacity = '0';
+    }
+    updateRoom4Access();
+    showScreen('room4');
+    el('inventory-wrap').classList.add('open');
+    saveProgress();
+  });
   btn('Инвентарь', () => el('inventory-wrap').classList.toggle('open'));
+  btn('Молитва', () => startPrayer());
   document.body.appendChild(panel);
 }

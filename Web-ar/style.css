@@ -784,7 +784,8 @@ html, body {
   top: 12%;
   width: 46%;
   pointer-events: none;
-  z-index: 45;
+  /* above the open compass, so a tap on "Пропустить" can never fall through onto it */
+  z-index: 65;
 }
 #room4-dialogue-bubble {
   position: relative;
@@ -1092,10 +1093,10 @@ html, body {
 #computer-window-back { left: 12%; }
 #computer-window-close { right: 12%; }
 #hit-carpet-drop {
-  left: 34.65%;
-  top: 74%;
-  width: 35.1%;
-  height: 25.95%;
+  left: 26%;
+  top: 78%;
+  width: 52%;
+  height: 22%;
   z-index: 5;
 }
 
@@ -1648,6 +1649,88 @@ html, body {
   z-index: 30;
 }
 
+/* ---- compass opened from the inventory: a third of the stage, in the middle,
+   over a light dim so the room stays visible behind it ---- */
+#compass-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* clicks pass straight through, so the room arrows keep working while the
+     compass stays open; only the compass itself reacts (to close it) */
+  pointer-events: none;
+}
+#compass-stack {
+  position: relative;
+  top: 0;
+  width: 38%;
+  pointer-events: none;
+  transition: top .4s ease;
+}
+
+#compass-overlay-img {
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.45));
+}
+#compass-letters-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* the four answers floating above the compass */
+#compass-dir-buttons {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 78%;
+  display: flex;
+  justify-content: center;
+  gap: 1.6vmin;
+  pointer-events: none;
+  z-index: 2;
+}
+#compass-dir-buttons.hidden { display: none !important; }
+.compass-dir-btn {
+  pointer-events: auto;
+  background: #a9793f;
+  border: 2px solid #f4ead9;
+  color: #f4ead9;
+  font-size: 2vmin;
+  font-weight: 600;
+  padding: 1vmin 2.4vmin;
+  border-radius: 22px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(1.5vmin);
+  transition: opacity .4s ease, transform .4s ease, background .2s ease;
+}
+.compass-dir-btn.shown { opacity: 1; transform: translateY(0); }
+.compass-dir-btn.selected { background: #f4ead9; color: #3a2a1a; border-color: #a9793f; }
+
+/* the empty part of the computer screen while the search page is open: tapping it closes the search */
+#computer-search-backdrop {
+  position: absolute;
+  left: 10.25%;
+  top: 17.15%;
+  width: 78.3%;
+  height: 44%;
+  z-index: 6;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+#computer-search-backdrop.hidden { display: none !important; }
+
 /* desktop icons are tiny on phones: scale the baked icon row up around a fixed
    origin, and the hit areas above were recomputed with the same transform */
 #computer-icons-img {
@@ -1661,4 +1744,279 @@ html, body {
   transform: scale(2.0022);
   transform-origin: 24.3% 16.63%;
   filter: drop-shadow(0.5px 0 0 #8b6b50) drop-shadow(-0.5px 0 0 #8b6b50) drop-shadow(0 0.5px 0 #8b6b50) drop-shadow(0 -0.5px 0 #8b6b50);
+}
+
+/* room dimming while the compass is open: below Nor (z 6) and her bubble, above the room pictures */
+#compass-dim {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(20,16,12,0.5);
+  pointer-events: none;
+}
+#compass-overlay:not(.hidden):not(.compass-suspended) + #compass-dim { display: block; }
+
+#nor-follow-img {
+  position: absolute;
+  left: 1%;
+  bottom: 8%;
+  height: 56%;
+  width: auto;
+  max-width: none;
+  z-index: 6;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+}
+#nor-follow-img.hidden { display: none !important; }
+#compass-bubble {
+  position: absolute;
+  left: 6%;
+  top: 12%;
+  width: 46%;
+  pointer-events: none;
+  z-index: 62;
+}
+#compass-bubble-body {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#compass-bubble-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#compass-bubble-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-right: 3px solid #a9793f;
+  border-bottom: 3px solid #a9793f;
+  transform: translateX(-50%) rotate(45deg);
+  bottom: -3.5%;
+  left: 20%;
+}
+#compass-bubble.hidden { display: none !important; }
+/* an answer already given to another wall */
+.compass-dir-btn.used { opacity: 0.55; }
+.compass-dir-btn.shown.used { opacity: 0.55; }
+
+/* the usual round arrow button, top left, to put the compass away */
+#compass-close-btn {
+  position: absolute;
+  top: 3.5%;
+  left: 3.5%;
+  width: 9%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #f4ead9;
+  font-size: 4vmin;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 3;
+}
+
+#compass-overlay.compass-suspended { visibility: hidden; }
+#compass-fade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .6s ease;
+  z-index: 70;
+}
+#compass-fade.on { opacity: 1; }
+
+/* the turn button on the carpet: a soft translucent circle with a thin round arrow, plus a gentle yellow glow on the carpet */
+#carpet-rot-btn {
+  position: absolute;
+  left: 50%;
+  top: 90.5%;
+  width: 8.5%;
+  aspect-ratio: 1/1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.26);
+  border: 1px solid rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.85);
+  padding: 1.4%;
+  cursor: pointer;
+  z-index: 9;
+}
+#carpet-rot-btn svg { display: block; width: 100%; height: 100%; }
+#carpet-rot-btn.hidden { display: none !important; }
+#carpet-placed-img.carpet-tappable {
+  animation: carpetPulse 1.8s ease-in-out infinite;
+}
+@keyframes carpetPulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255,236,170,0)); }
+  50% { filter: drop-shadow(0 0 1.6vmin rgba(255,236,170,0.9)); }
+}
+/* tapping Nor next to the compass repeats her last line */
+#nor-follow-img { pointer-events: auto; cursor: pointer; z-index: 8; }
+
+/* ---- prayer cutscene ---- */
+#scene-prayer { background: #000; }
+.prayer-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .8s ease;
+}
+/* later frames sit on top, so each one fades in over the previous without ever showing a gap */
+#prayer-frame-2 { z-index: 2; }
+#prayer-frame-3 { z-index: 3; }
+#prayer-frame-4 { z-index: 4; }
+.prayer-frame.shown { opacity: 1; }
+#prayer-end {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20,16,12,0.55);
+  opacity: 0;
+  transition: opacity 1.4s ease;
+  pointer-events: none;
+}
+#prayer-end.shown { opacity: 1; }
+#prayer-end p {
+  margin: 0;
+  padding: 2.4vmin 6vmin;
+  color: #f4ead9;
+  font-size: 4.6vmin;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: center;
+  border-top: 2px solid rgba(244,234,217,0.55);
+  border-bottom: 2px solid rgba(244,234,217,0.55);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+}
+/* nothing but the pictures during the cutscene */
+#stage.prayer-mode #inventory-wrap,
+#stage.prayer-mode #hints-wrap,
+#stage.prayer-mode #lang-menu-toggle,
+#stage.prayer-mode #lang-gear,
+#stage.prayer-mode #compass-overlay,
+#stage.prayer-mode #compass-dim,
+#stage.prayer-mode #nor-follow-img,
+#stage.prayer-mode #compass-bubble { display: none !important; }
+
+#prayer-notice {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  bottom: 4%;
+  z-index: 12;
+  padding: 1.8vmin 3vmin;
+  border-radius: 14px;
+  background: rgba(20,16,12,0.62);
+  opacity: 0;
+  transition: opacity .8s ease;
+  pointer-events: none;
+}
+#prayer-notice.shown {
+  opacity: 1;
+  /* the panel behind the text glows yellow and fades, again and again */
+  animation: noticePanelGlow 2.2s ease-in-out infinite;
+}
+@keyframes noticePanelGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,214,90,0), 0 0 0 1px rgba(255,214,90,0.15); background: rgba(20,16,12,0.62); }
+  50% { box-shadow: 0 0 3.2vmin 0.6vmin rgba(255,214,90,0.85), 0 0 0 1px rgba(255,224,120,0.8); background: rgba(52,40,16,0.66); }
+}
+#prayer-notice p {
+  margin: 0;
+  color: #f4ead9;
+  font-size: 2.3vmin;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* ---- ported from the Russian version ---- */
+#hit-icon-koran {
+  left: 28.64%;
+  top: 26.1%;
+  width: 13.11%;
+  height: 13.77%;
+  z-index: 7;
+}
+#computer-video-skip {
+  position: absolute;
+  right: 13.5%;
+  top: 54%;
+  background: #a9793f;
+  border: 2px solid #f4ead9;
+  color: #f4ead9;
+  font-size: 1.6vmin;
+  font-weight: 600;
+  padding: 0.7vmin 2.4vmin;
+  border-radius: 20px;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  cursor: pointer;
+  z-index: 12;
+}
+#computer-video-skip:hover { background: #bd8a4a; }
+#computer-video-skip.hidden { display: none !important; }
+#computer-view-close { left: 12%; }
+#room3-dialogue {
+  position: absolute;
+  left: 8%;
+  top: 65%;
+  width: 54%;
+  pointer-events: none;
+  z-index: 45;
+}
+#room3-dialogue-bubble {
+  position: relative;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 4% 6%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+#room3-dialogue-text {
+  margin: 0;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+}
+#room3-dialogue-tail {
+  position: absolute;
+  width: 4.5%;
+  aspect-ratio: 1/1;
+  background: #f4ead9;
+  border-left: 3px solid #a9793f;
+  border-top: 3px solid #a9793f;
+  transform: translateX(-50%) rotate(45deg);
+  top: -3.5%;
+  left: 20%;
+}
+#sticker-lightbox-caption {
+  max-width: 70%;
+  margin: 0;
+  background: #f4ead9;
+  border: 3px solid #a9793f;
+  border-radius: 16px;
+  padding: 1.6vmin 3.2vmin;
+  text-align: center;
+  color: #3a2a1a;
+  font-size: 2vmin;
+  line-height: 1.35;
+  cursor: default;
 }

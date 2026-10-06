@@ -260,7 +260,7 @@ function installAudioShims() {
   });
   // the opening sounds (and the click sounds) are decoded first, so they are ready the moment "Играть" is pressed
   const first = ['audio-tap', 'audio-move', 'audio-narrator-intro-1', 'audio-intro-village', 'audio-narrator-intro-2',
-    'audio-intro-family', 'audio-narrator-intro-3', 'audio-narrator-intro-4'];
+    'audio-intro-family', 'audio-narrator-intro-3', 'audio-intro-sleep', 'audio-narrator-intro-4'];
   audioPreloadQueue.sort((a, b) => {
     const ia = first.indexOf(a.id), ib = first.indexOf(b.id);
     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
@@ -3008,6 +3008,7 @@ function rampAudioVolume(a, toVol, ms, done) {
 const INTRO_AMBIENCE = {
   village: { id: 'audio-intro-village', db: -3 },
   family: { id: 'audio-intro-family', db: 0 },
+  sleep: { id: 'audio-intro-sleep', db: -9 }, // Nor asleep on the last picture; loops until "Yes" is pressed
 };
 function introAmbienceStart(key, fadeMs) {
   const cfg = INTRO_AMBIENCE[key], a = el(cfg.id);
@@ -3021,8 +3022,9 @@ function introAmbienceFadeOut(key, fadeMs) {
   const a = el(INTRO_AMBIENCE[key].id);
   rampAudioVolume(a, 0, fadeMs, () => a.pause());
 }
-function introAmbienceStopAll() {
-  Object.values(INTRO_AMBIENCE).forEach(cfg => {
+function introAmbienceStopAll(except) {
+  Object.entries(INTRO_AMBIENCE).forEach(([key, cfg]) => {
+    if (key === except) return;
     const a = el(cfg.id);
     clearInterval(introRampTimers.get(a));
     a.pause();
@@ -3030,8 +3032,8 @@ function introAmbienceStopAll() {
   });
 }
 
-function stopIntroNarrators() {
-  introAmbienceStopAll();
+function stopIntroNarrators(keepAmbience) {
+  introAmbienceStopAll(keepAmbience);
   Object.values(INTRO_NARRATORS).forEach(id => {
     const a = el(id);
     a.pause();
@@ -3067,6 +3069,11 @@ function introDarkenTo(n) {
     introAmbienceFadeOut('village', 700);
     introAmbienceStart('family', 350);
   }
+  // on the last picture Nor is asleep: her breathing takes over from the murmur and loops until "Yes"
+  if (n === 4) {
+    introAmbienceFadeOut('family', 700);
+    introAmbienceStart('sleep', 350);
+  }
   introTimeouts.push(setTimeout(() => {
     showIntroFrame(n);
     playIntroNarrator(n);
@@ -3085,9 +3092,9 @@ function startIntro() {
   showIntroFrame(1);
 }
 
-function finishIntro() {
+function finishIntro(keepAmbience) {
   clearIntroTimeouts();
-  stopIntroNarrators();
+  stopIntroNarrators(keepAmbience);
   el('inventory-wrap').classList.remove('hidden');
   showScreen('room');
 }
@@ -3102,7 +3109,8 @@ el('intro-play-btn').addEventListener('click', () => {
 
 el('intro-yes-btn').addEventListener('click', () => {
   playSfx(el('audio-tap'), -12);
-  finishIntro();
+  introAmbienceFadeOut('sleep', 700); // the breathing fades away instead of cutting off
+  finishIntro('sleep');
 });
 
 // ---------------- init ----------------
