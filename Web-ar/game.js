@@ -1114,7 +1114,7 @@ const BOARD_STICKER_ZOOM = {
   2: 'assets/img/room4/board-zoom-23.webp?v=1',
   3: 'assets/img/room4/board-zoom-23.webp?v=1',
   4: 'assets/img/room4/board-zoom-4.jpg?v=1',
-  5: 'assets/img/room4/board-zoom-5.webp?v=1',
+  5: 'assets/img/room4/board-zoom-5.webp?v=2',
 };
 Object.keys(BOARD_STICKER_ZOOM).forEach(n => {
   el('hit-board-sticker-' + n).addEventListener('click', () => {
