@@ -2625,13 +2625,23 @@ function playCutscene() {
 el('cutscene-skip').addEventListener('click', skipCutscene);
 
 // ---------------- prayer cutscene ----------------
-// four pictures, 4 seconds each (the voice-over timing comes later), then "to be continued"
-const PRAYER_FRAME_MS = 4000;
+// four pictures, each shown for as long as its recording lasts (opening of the prayer,
+// two "Allahu akbar", closing of the prayer); then "to be continued" with the solved-puzzle chime
+const PRAYER_FALLBACK_SECONDS = [7.9, 3.3, 3.0, 9.8];
+const PRAYER_GAP_MS = 700;
 let prayerTimers = [];
 function prayerLater(fn, ms) { prayerTimers.push(setTimeout(fn, ms)); }
+function stopPrayerAudio() {
+  for (let k = 1; k <= 4; k++) {
+    const a = el('audio-prayer-' + k);
+    a.pause();
+    a.currentTime = 0;
+  }
+}
 function startPrayer() {
   prayerTimers.forEach(clearTimeout);
   prayerTimers = [];
+  stopPrayerAudio();
   // fade to black, swap the scene while dark, fade back in
   el('compass-fade').classList.add('on');
   prayerLater(() => {
@@ -2646,66 +2656,24 @@ function startPrayer() {
     el('prayer-frame-1').classList.add('shown');
     el('compass-fade').classList.remove('on');
   }, 700);
-  const t0 = 1400;
-  for (let k = 2; k <= 4; k++) {
-    prayerLater(() => el('prayer-frame-' + k).classList.add('shown'), t0 + (k - 1) * PRAYER_FRAME_MS);
+  let t = 1400;
+  for (let k = 1; k <= 4; k++) {
+    const a = el('audio-prayer-' + k);
+    const secs = (a.duration && isFinite(a.duration)) ? a.duration : PRAYER_FALLBACK_SECONDS[k - 1];
+    const start = t;
+    if (k > 1) prayerLater(() => el('prayer-frame-' + k).classList.add('shown'), start);
+    prayerLater(() => {
+      routeToMaster(a, true);
+      a.currentTime = 0;
+      a.volume = dbToVol(0);
+      a.play();
+    }, start);
+    t = start + Math.round(secs * 1000) + PRAYER_GAP_MS;
   }
-  prayerLater(() => el('prayer-end').classList.add('shown'), t0 + 4 * PRAYER_FRAME_MS);
-}
-
-// ---------------- intro cutscene ----------------
-
-const INTRO_NARRATORS = {
-  1: 'audio-narrator-intro-1',
-  2: 'audio-narrator-intro-2',
-  3: 'audio-narrator-intro-3',
-  4: 'audio-narrator-intro-4',
-};
-const INTRO_DARKEN_MS = 500;
-
-let introTimeouts = [];
-
-function clearIntroTimeouts() {
-  introTimeouts.forEach(clearTimeout);
-  introTimeouts = [];
-}
-
-function stopIntroNarrators() {
-  Object.values(INTRO_NARRATORS).forEach(id => {
-    const a = el(id);
-    a.pause();
-    a.currentTime = 0;
-    a.onended = null;
-  });
-}
-
-function showIntroFrame(n) {
-  for (let i = 1; i <= 4; i++) {
-    el('intro-frame-' + i).classList.toggle('active', i === n);
-  }
-  el('intro-yes-btn').classList.toggle('hidden', n !== 4);
-}
-
-function playIntroNarrator(n) {
-  const audio = el(INTRO_NARRATORS[n]);
-  routeToMaster(audio, 'narrator');
-  audio.currentTime = 0;
-  audio.volume = dbToVol(-6);
-  audio.onended = () => {
-    if (n < 4) introDarkenTo(n + 1);
-  };
-  audio.play();
-}
-
-// card change = fade to black, swap the picture underneath, fade back up —
-// timed to start the moment the current line finishes narrating
-function introDarkenTo(n) {
-  el('intro-dim').classList.add('show-transition');
-  introTimeouts.push(setTimeout(() => {
-    showIntroFrame(n);
-    playIntroNarrator(n);
-    el('intro-dim').classList.remove('show-transition');
-  }, INTRO_DARKEN_MS));
+  prayerLater(() => {
+    el('prayer-end').classList.add('shown');
+    playSfx(el('audio-puzzlesolved'), -16);
+  }, t + 600);
 }
 
 function startIntro() {
@@ -2864,7 +2832,6 @@ if (location.search.includes('debug')) {
     updateRoom4Access();
     showScreen('room2');
   });
-  btn('Молитва', () => startPrayer());
   btn('Нор знает компас', () => {
     // Nor has seen how the compass works and said it can be opened: tap the compass in the inventory
     state.readyForNamaz = true;
@@ -2896,5 +2863,6 @@ if (location.search.includes('debug')) {
     saveProgress();
   });
   btn('Инвентарь', () => el('inventory-wrap').classList.toggle('open'));
+  btn('Молитва', () => startPrayer());
   document.body.appendChild(panel);
 }
