@@ -523,6 +523,25 @@
 <audio preload="auto" id="audio-towel" src="assets/audio/towel.mp3"></audio>
 <audio preload="auto" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
 
+<script>
+/* Telegram Mini App: only when opened inside Telegram, load its helper, fill the whole screen and keep swipes from closing the game */
+(function () {
+  if (!(/tgWebApp/i.test(location.hash + location.search) || /Telegram/i.test(navigator.userAgent))) return;
+  var s = document.createElement('script');
+  s.src = 'https://telegram.org/js/telegram-web-app.js';
+  s.onload = function () {
+    try {
+      var w = window.Telegram.WebApp;
+      w.ready();
+      w.expand();
+      if (w.disableVerticalSwipes) w.disableVerticalSwipes();
+      if (w.setHeaderColor) w.setHeaderColor('#1c1f26');
+      if (w.setBackgroundColor) w.setBackgroundColor('#1c1f26');
+    } catch (e) {}
+  };
+  document.head.appendChild(s);
+})();
+</script>
 <script src="game.js?v=219"></script>
 </body>
 </html>
