@@ -1996,18 +1996,19 @@ html, body {
   transition: opacity .8s ease;
   pointer-events: none;
 }
-#prayer-notice.shown { opacity: 1; }
+#prayer-notice.shown {
+  opacity: 1;
+  /* the panel behind the text glows yellow and fades, again and again */
+  animation: noticePanelGlow 2.2s ease-in-out infinite;
+}
+@keyframes noticePanelGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,214,90,0), 0 0 0 1px rgba(255,214,90,0.15); background: rgba(20,16,12,0.62); }
+  50% { box-shadow: 0 0 3.2vmin 0.6vmin rgba(255,214,90,0.85), 0 0 0 1px rgba(255,224,120,0.8); background: rgba(52,40,16,0.66); }
+}
 #prayer-notice p {
   margin: 0;
   color: #f4ead9;
   font-size: 2.3vmin;
   line-height: 1.4;
   text-align: center;
-  /* soft yellow glow around the text */
-  text-shadow: 0 0 6px rgba(255,214,90,0.85), 0 0 14px rgba(255,200,60,0.55);
-}
-#prayer-notice.speaking p { animation: noticeGlow 1.6s ease-in-out infinite; }
-@keyframes noticeGlow {
-  0%, 100% { text-shadow: 0 0 5px rgba(255,214,90,0.7), 0 0 11px rgba(255,200,60,0.4); }
-  50% { text-shadow: 0 0 9px rgba(255,224,110,1), 0 0 22px rgba(255,205,70,0.8); }
 }
