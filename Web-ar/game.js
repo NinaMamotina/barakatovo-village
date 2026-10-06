@@ -247,6 +247,13 @@ function installAudioShims() {
   document.querySelectorAll('audio').forEach(a => {
     if (!LONG_AUDIO_IDS.has(a.id) && a.getAttribute('src')) installAudioShim(a);
   });
+  // the opening sounds (and the click sounds) are decoded first, so they are ready the moment "Играть" is pressed
+  const first = ['audio-tap', 'audio-move', 'audio-narrator-intro-1', 'audio-intro-village', 'audio-narrator-intro-2',
+    'audio-intro-family', 'audio-narrator-intro-3', 'audio-narrator-intro-4'];
+  audioPreloadQueue.sort((a, b) => {
+    const ia = first.indexOf(a.id), ib = first.indexOf(b.id);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
   pumpAudioPreload();
 }
 
@@ -2316,7 +2323,46 @@ function clearIntroTimeouts() {
   introTimeouts = [];
 }
 
+// ambience under the opening pictures: the village on the first one, the family's murmur on the second;
+// they hand over to each other with a CROSSFADE (one fades out while the other fades in), not fade-out-then-in
+const introRampTimers = new WeakMap();
+function rampAudioVolume(a, toVol, ms, done) {
+  clearInterval(introRampTimers.get(a));
+  const fromVol = a.volume, t0 = performance.now();
+  const timer = setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    a.volume = Math.max(0, fromVol + (toVol - fromVol) * k);
+    if (k >= 1) { clearInterval(timer); if (done) done(); }
+  }, 30);
+  introRampTimers.set(a, timer);
+}
+const INTRO_AMBIENCE = {
+  village: { id: 'audio-intro-village', db: -3 },
+  family: { id: 'audio-intro-family', db: 0 },
+};
+function introAmbienceStart(key, fadeMs) {
+  const cfg = INTRO_AMBIENCE[key], a = el(cfg.id);
+  routeToMaster(a, false);
+  a.currentTime = 0;
+  a.volume = 0;
+  a.play();
+  rampAudioVolume(a, dbToVol(cfg.db), fadeMs);
+}
+function introAmbienceFadeOut(key, fadeMs) {
+  const a = el(INTRO_AMBIENCE[key].id);
+  rampAudioVolume(a, 0, fadeMs, () => a.pause());
+}
+function introAmbienceStopAll() {
+  Object.values(INTRO_AMBIENCE).forEach(cfg => {
+    const a = el(cfg.id);
+    clearInterval(introRampTimers.get(a));
+    a.pause();
+    a.currentTime = 0;
+  });
+}
+
 function stopIntroNarrators() {
+  introAmbienceStopAll();
   Object.values(INTRO_NARRATORS).forEach(id => {
     const a = el(id);
     a.pause();
@@ -2347,6 +2393,11 @@ function playIntroNarrator(n) {
 // timed to start the moment the current line finishes narrating
 function introDarkenTo(n) {
   el('intro-dim').classList.add('show-transition');
+  // the family's murmur comes in while the village fades away: a crossfade across the dark
+  if (n === 2) {
+    introAmbienceFadeOut('village', 700);
+    introAmbienceStart('family', 350);
+  }
   introTimeouts.push(setTimeout(() => {
     showIntroFrame(n);
     playIntroNarrator(n);
@@ -2376,6 +2427,7 @@ el('intro-play-btn').addEventListener('click', () => {
   playSfx(el('audio-tap'), -12);
   el('intro-play-btn').classList.add('hidden');
   el('intro-dim').classList.remove('show-hint');
+  introAmbienceStart('village', 800);
   introTimeouts.push(setTimeout(() => playIntroNarrator(1), 200));
 });
 
