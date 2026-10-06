@@ -633,7 +633,7 @@ function updateCompassImage() {
 }
 let compassOverlayOpenedAt = 0;
 function openCompassOverlay() {
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   compassOverlayOpenedAt = Date.now();
   updateCompassImage();
   el('compass-overlay').classList.remove('hidden');
@@ -887,7 +887,7 @@ document.querySelectorAll('.compass-dir-btn').forEach(btn => {
   });
 });
 function closeCompassOverlay() {
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   cancelCompassDemo();
   el('compass-overlay').classList.add('hidden');
   updateNorFollow();
@@ -1035,7 +1035,7 @@ function updateWindowVisual() {
 // room view: shutters just open the close-up
 el('hit-shutters').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   showScreen('window');
 });
 
@@ -1065,7 +1065,7 @@ el('hit-mosque').addEventListener('click', () => {
 // Nor wakes up when the player leaves the window close-up after the azan has started
 document.querySelectorAll('[data-back-window]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     if (state.window === 'mosque') {
       fadeAzanDown();
     }
@@ -1146,14 +1146,14 @@ function checkClockCorrect() {
 
 el('hit-clock').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   fadeAzanDown();
   showScreen('clock');
   updateClockVisuals();
 });
 document.querySelectorAll('[data-back]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     if (el('scene-clock').classList.contains('active')) {
       el('clock-success').classList.add('hidden');
       if (state.clockCorrect && !state.clockLoopBg) {
@@ -1167,7 +1167,7 @@ document.querySelectorAll('[data-back]').forEach(btn =>
 
 el('hit-schedule').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   showScreen('schedule');
 });
 
@@ -1557,12 +1557,12 @@ function setVideoReplayIcon() {
 
 el('hit-computer').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   showScreen('computer');
 });
 document.querySelectorAll('[data-back-computer]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     el('computer-video').pause();
     closeComputerWindow();
     showScreen('room3');
@@ -1708,13 +1708,13 @@ el('hit-tumbochka-drawer').addEventListener('click', () => {
     playSfx(el('audio-wardrobe'), -7);
     el('tumbochka-img').src = 'assets/img/room4/tumbochka-opened.webp?v=1';
   } else {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     showScreen('tumbochka-drawer');
   }
 });
 document.querySelectorAll('[data-back-tumbochka-drawer]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     showScreen('room4');
     if (!state.norRoom4Shown && state.inventory.some(it => it.id === 'carpet')) {
       state.norRoom4Shown = true;
@@ -1732,24 +1732,24 @@ document.querySelectorAll('[data-back-tumbochka-drawer]').forEach(btn =>
 
 el('hit-tumbochka-top').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   showScreen('tumbochka-top');
 });
 document.querySelectorAll('[data-back-tumbochka-top]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     showScreen('room4');
   })
 );
 
 el('hit-board').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   showScreen('board');
 });
 document.querySelectorAll('[data-back-board]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     showScreen('room4');
     if (kiblaHintPending) {
       kiblaHintPending = false;
@@ -1781,7 +1781,7 @@ const BOARD_STICKER_ZOOM = {
 Object.keys(BOARD_STICKER_ZOOM).forEach(n => {
   el('hit-board-sticker-' + n).addEventListener('click', () => {
     if (state.talking) return;
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     el('sticker-lightbox-img').src = BOARD_STICKER_ZOOM[n];
     el('sticker-lightbox').classList.remove('hidden');
     // the compass sticker (1) was a gift from Nor's friend; she tells the story
@@ -1863,7 +1863,7 @@ function rotateCarpet(step) {
   const k = CARPET_ORDER.indexOf(state.carpetDir || 'w');
   state.carpetDir = CARPET_ORDER[(k + step + 4) % 4];
   updateCarpetImage();
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   if (state.carpetDir === 's') {
     playSfx(el('audio-puzzlesolved'), -16);
     updateCarpetArrows();
@@ -1969,14 +1969,14 @@ el('hit-wardrobe-drawer').addEventListener('click', () => {
     playSfx(el('audio-wardrobe'), -7);
     el('wardrobe-img').src = 'assets/img/room2/wardrobe-open.webp?v=2';
   } else {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     showScreen('wardrobe');
   }
 });
 
 document.querySelectorAll('[data-back-wardrobe]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     showScreen('room2');
   })
 );
@@ -1985,12 +1985,12 @@ document.querySelectorAll('[data-back-wardrobe]').forEach(btn =>
 
 el('hit-mirror').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   showScreen('mirror');
 });
 document.querySelectorAll('[data-back-mirror]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     showScreen('room2');
   })
 );
@@ -1998,7 +1998,7 @@ document.querySelectorAll('[data-back-mirror]').forEach(btn =>
 function openBooklet() {
   if (state.talking) return;
   if (activeDialogueStop) activeDialogueStop();
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   el('sticker-lightbox-img').src = 'assets/img/room2/wudu-booklet.jpg?v=1';
   el('sticker-lightbox').classList.remove('hidden');
   const caption = el('sticker-lightbox-caption');
@@ -2015,7 +2015,7 @@ function openBooklet() {
 // the mirror itself; only the closeup's booklet actually opens it
 el('hit-booklet').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   showScreen('mirror');
 });
 el('hit-booklet-closeup').addEventListener('click', openBooklet);
@@ -2031,24 +2031,24 @@ function buildInventoryUI() {
     bar.appendChild(slot);
   }
   el('inventory-toggle').addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     el('inventory-wrap').classList.toggle('open');
   });
   setupInventoryDrag();
 
   el('lang-gear').addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     el('lang-menu').classList.toggle('hidden');
     el('lang-submenu').classList.add('hidden'); // closed by default each time the menu opens
   });
 
   el('hints-toggle').addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     el('hints-bar').classList.toggle('hidden');
   });
 
   el('lang-menu-toggle').addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     el('lang-submenu').classList.toggle('hidden');
   });
 
@@ -2205,7 +2205,7 @@ function setupInventoryDrag() {
       el('carpet-placed-img').classList.remove('hidden');
       updateCarpetImage();
       updateCarpetArrows();
-      playSfx(el('audio-move'), -12);
+      playSfx(el('audio-tap'), -12);
       removeInventoryItem('carpet');
       ghost.remove();
       sourceSlot.classList.remove('drag-source');
@@ -2317,7 +2317,7 @@ function removeInventoryItem(id) {
 function collectItem(id, label, icon, imgElId, hitElId, toFront) {
   if (state.inventory.some(it => it.id === id)) return;
   if (state.inventory.length >= MAX_INVENTORY_SLOTS) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   if (toFront) {
     state.inventory.unshift({ id, label, icon });
   } else {
@@ -2369,7 +2369,7 @@ el('hit-compas-big').addEventListener('click', () => {
 // interactive board once Nor has woken up AND said her wudu/namaz line
 el('hit-cards').addEventListener('click', () => {
   if (state.talking) return;
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   updateCardsView();
   showScreen('cards');
   if (state.norGreeted && !state.cardsSolved) {
@@ -2378,7 +2378,7 @@ el('hit-cards').addEventListener('click', () => {
 });
 document.querySelectorAll('[data-back-cards]').forEach(btn =>
   btn.addEventListener('click', () => {
-    playSfx(el('audio-move'), -12);
+    playSfx(el('audio-tap'), -12);
     showScreen('bath');
   })
 );
@@ -2551,7 +2551,7 @@ function checkCardsWin() {
 el('cards-success').addEventListener('click', () => {
   const reward = el('card-reward');
   if (!reward.classList.contains('hidden')) return; // already dropped
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   reward.classList.remove('hidden');
   requestAnimationFrame(() => requestAnimationFrame(() => {
     reward.classList.add('drop-in');
@@ -2606,7 +2606,7 @@ el('card-reward').addEventListener('click', () => {
         el('hit-bath-door').classList.add('hidden'); // can't leave mid-wash; re-enabled once Nor's out
         // wait for a tap anywhere in the scene instead of an auto-timer
         el('scene-bath').addEventListener('click', () => {
-          playSfx(el('audio-move'), -12);
+          playSfx(el('audio-tap'), -12);
           playCutscene();
         }, { once: true });
       }, 500);
@@ -3026,14 +3026,14 @@ function finishIntro() {
 }
 
 el('intro-play-btn').addEventListener('click', () => {
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   el('intro-play-btn').classList.add('hidden');
   el('intro-dim').classList.remove('show-hint');
   introTimeouts.push(setTimeout(() => playIntroNarrator(1), 200));
 });
 
 el('intro-yes-btn').addEventListener('click', () => {
-  playSfx(el('audio-move'), -12);
+  playSfx(el('audio-tap'), -12);
   finishIntro();
 });
 
