@@ -569,7 +569,8 @@ function showScreen(name) {
   updateComputerHum();
   updateNasheedForComputer(name);
   syncCompassSuggestion();
-  saveProgress();
+  // the untouched opening picture is not a game worth resuming: nothing is saved until the game really starts
+  if (name !== 'intro') saveProgress();
   const wall = COMPASS_WALL_OF_SCREEN[name];
   if (wall) {
     compassWall = wall;
@@ -3123,8 +3124,9 @@ el('save-prompt-continue').addEventListener('click', () => {
 });
 
 el('save-prompt-restart').addEventListener('click', () => {
+  // "start again" clears the save and reloads, so the game begins from the opening cutscene
   localStorage.removeItem(SAVE_KEY);
-  el('save-prompt').classList.add('hidden');
+  location.reload();
 });
 
 // ---------------- debug/test panel (add ?debug to the URL to see it) ----------------
