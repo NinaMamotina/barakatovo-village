@@ -2003,4 +2003,11 @@ html, body {
   font-size: 2.3vmin;
   line-height: 1.4;
   text-align: center;
+  /* soft yellow glow around the text */
+  text-shadow: 0 0 6px rgba(255,214,90,0.85), 0 0 14px rgba(255,200,60,0.55);
+}
+#prayer-notice.speaking p { animation: noticeGlow 1.6s ease-in-out infinite; }
+@keyframes noticeGlow {
+  0%, 100% { text-shadow: 0 0 5px rgba(255,214,90,0.7), 0 0 11px rgba(255,200,60,0.4); }
+  50% { text-shadow: 0 0 9px rgba(255,224,110,1), 0 0 22px rgba(255,205,70,0.8); }
 }

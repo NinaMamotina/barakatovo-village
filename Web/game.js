@@ -2655,7 +2655,7 @@ function startPrayer() {
     showScreen('prayer');
     document.querySelectorAll('.prayer-frame').forEach(f => f.classList.remove('shown'));
     el('prayer-end').classList.remove('shown');
-    el('prayer-notice').classList.remove('shown');
+    el('prayer-notice').classList.remove('shown', 'speaking');
     el('prayer-frame-1').classList.add('shown');
     el('compass-fade').classList.remove('on');
   }, 700);
@@ -2679,10 +2679,13 @@ function startPrayer() {
     // as "to be continued" appears, a voice reads the notice out (recording still to come)
     const warn = document.getElementById('audio-prayer-warning');
     if (warn) {
-      routeToMaster(warn, true);
+      // the narrator reads it; the glow around the notice pulses while she speaks
+      routeToMaster(warn, 'narrator');
       warn.currentTime = 0;
-      warn.volume = dbToVol(0);
+      warn.volume = dbToVol(-6);
       warn.play();
+      el('prayer-notice').classList.add('speaking');
+      warn.onended = () => el('prayer-notice').classList.remove('speaking');
     }
   }, t0 + total * 1000 + 800);
 }
