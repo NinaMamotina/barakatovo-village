@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Деревня Баракатово</title>
-<link rel="stylesheet" href="style.css?v=203">
+<link rel="stylesheet" href="style.css?v=210">
 </head>
 <body>
 
@@ -382,6 +382,15 @@
       <button id="cutscene-skip" class="cutscene-skip-btn">Пропустить</button>
     </div>
 
+    <!-- ===================== КАТ-СЦЕНА «МОЛИТВА» (4 кадра по 4 секунды, затем «Продолжение следует») ===================== -->
+    <div id="scene-prayer" class="screen">
+      <img class="prayer-frame" id="prayer-frame-1" src="assets/img/prayer/prayer-1.webp?v=1" alt="">
+      <img class="prayer-frame" id="prayer-frame-2" src="assets/img/prayer/prayer-2.webp?v=1" alt="">
+      <img class="prayer-frame" id="prayer-frame-3" src="assets/img/prayer/prayer-3.webp?v=1" alt="">
+      <img class="prayer-frame" id="prayer-frame-4" src="assets/img/prayer/prayer-4.webp?v=1" alt="">
+      <div id="prayer-end"><p>Продолжение следует…</p></div>
+    </div>
+
     <!-- ===================== ВСТУПИТЕЛЬНАЯ СЦЕНА (нарезка Start of the game.png) ===================== -->
     <div id="scene-intro" class="screen">
       <img class="cutscene-frame active" id="intro-frame-1" src="assets/img/intro/intro-1.jpg?v=1" alt="">
@@ -510,6 +519,6 @@
 <audio preload="auto" id="audio-towel" src="assets/audio/towel.mp3"></audio>
 <audio preload="auto" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
 
-<script src="game.js?v=203"></script>
+<script src="game.js?v=210"></script>
 </body>
 </html>

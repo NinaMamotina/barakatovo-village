@@ -384,6 +384,7 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   // the inventory only stays hidden on the opening cutscene; any other screen (e.g. a debug jump) brings it back
   if (name !== 'intro') el('inventory-wrap').classList.remove('hidden');
+  document.getElementById('stage').classList.toggle('prayer-mode', name === 'prayer');
   el('scene-' + name).classList.add('active');
   updateClockLoopForScreen(name);
   updateBathAmbience(name);
@@ -1630,8 +1631,10 @@ function rotateCarpet(step) {
     // the carpet now points at the qibla: Nor reacts
     setTimeout(() => {
       const text = 'Ура, коврик смотрит на юг — прямо в сторону Киблы! Теперь я готова к намазу.';
-      playRoom4Dialogue(text, null, 8000);
+      playRoom4Dialogue(text, null, 7000);
       lastRoom4Line = { text, audioId: null };
+      // once she has finished speaking, the prayer cutscene begins
+      setTimeout(startPrayer, 7000 + 600);
     }, 700);
   }
   saveProgress();
@@ -2621,6 +2624,35 @@ function playCutscene() {
 
 el('cutscene-skip').addEventListener('click', skipCutscene);
 
+// ---------------- prayer cutscene ----------------
+// four pictures, 4 seconds each (the voice-over timing comes later), then "to be continued"
+const PRAYER_FRAME_MS = 4000;
+let prayerTimers = [];
+function prayerLater(fn, ms) { prayerTimers.push(setTimeout(fn, ms)); }
+function startPrayer() {
+  prayerTimers.forEach(clearTimeout);
+  prayerTimers = [];
+  // fade to black, swap the scene while dark, fade back in
+  el('compass-fade').classList.add('on');
+  prayerLater(() => {
+    cancelCompassDemo();
+    el('compass-overlay').classList.add('hidden');
+    updateNorFollow();
+    hideCompassBubble();
+    stopRoom4Dialogue();
+    showScreen('prayer');
+    document.querySelectorAll('.prayer-frame').forEach(f => f.classList.remove('shown'));
+    el('prayer-end').classList.remove('shown');
+    el('prayer-frame-1').classList.add('shown');
+    el('compass-fade').classList.remove('on');
+  }, 700);
+  const t0 = 1400;
+  for (let k = 2; k <= 4; k++) {
+    prayerLater(() => el('prayer-frame-' + k).classList.add('shown'), t0 + (k - 1) * PRAYER_FRAME_MS);
+  }
+  prayerLater(() => el('prayer-end').classList.add('shown'), t0 + 4 * PRAYER_FRAME_MS);
+}
+
 // ---------------- intro cutscene ----------------
 
 const INTRO_NARRATORS = {
@@ -2832,6 +2864,7 @@ if (location.search.includes('debug')) {
     updateRoom4Access();
     showScreen('room2');
   });
+  btn('Молитва', () => startPrayer());
   btn('Нор знает компас', () => {
     // Nor has seen how the compass works and said it can be opened: tap the compass in the inventory
     state.readyForNamaz = true;
