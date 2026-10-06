@@ -558,6 +558,7 @@ function cancelCompassDemo() {
   compassDemoTimers.forEach(clearTimeout);
   compassDemoTimers = [];
   compassDemoRunning = false;
+  compassDemoStage = 0;
   compassLock = false;
   hideCompassBubble();
   el('compass-dir-buttons').classList.add('hidden');
@@ -626,47 +627,57 @@ el('nor-follow-img').addEventListener('click', () => {
   if (line) showCompassBubble(line, 9000);
 });
 
-function runCompassDemo(restart) {
-  cancelCompassDemo();
-  compassLock = true;
-  compassDemoRunning = true;
-  Object.keys(COMPASS_SFX_URLS).forEach(loadCompassSfx);
-  const line1 = 'Моя комната — квадрат, и у неё четыре стороны. Переходи от одной к другой стрелочками справа и слева. Давай найдём, с какой стороны юг!';
-  const line2 = 'Так, держу компас ровно, как показывали в видео.';
-  const line3 = 'Ага, красная стрелка справа, значит и северный полюс тоже справа. А какая часть света тогда передо мной?';
-  // on a restart the first explanation is skipped: only a short fast spin, then line 2
-  const T1 = restart ? 0 : 12000, T2 = 5500, T3 = 9500;
-  let i = 0;
-  if (!restart) {
-    playRoom4Dialogue(line1, null, T1);
+// the demo is a chain of three stages (explanation, "holding it steady", the question);
+// "Пропустить" on Nor's bubble jumps to the next stage, it never closes the compass
+const COMPASS_DEMO_LINES = [
+  'Моя комната — квадрат, и у неё четыре стороны. Переходи от одной к другой стрелочками справа и слева. Давай найдём, с какой стороны юг!',
+  'Так, держу компас ровно, как показывали в видео.',
+  'Ага, красная стрелка справа, значит и северный полюс тоже справа. А какая часть света тогда передо мной?',
+];
+let compassDemoStage = 0;      // 1, 2 or 3 while the demo runs, 0 otherwise
+let compassDemoRestart = false;
+let compassSpinIndex = 0;
+function compassSpinStep() { setCompassFrame(COMPASS_SPIN_ORDER[compassSpinIndex++ % 4]); }
+function compassDemoGoTo(stage) {
+  compassDemoTimers.forEach(clearTimeout);
+  compassDemoTimers = [];
+  compassDemoStage = stage;
+  const T1 = 12000, T2 = 5500, T3 = 9500;
+  if (stage === 1) {
+    playRoom4Dialogue(COMPASS_DEMO_LINES[0], null, T1);
     // fast spin for the whole first line
-    for (let t = 0; t < T1; t += 90) {
-      compassDemoLater(() => setCompassFrame(COMPASS_SPIN_ORDER[i++ % 4]), t);
-    }
-  }
-  // second line: the spin slows down (gaps grow)
-  compassDemoLater(() => {
-    playRoom4Dialogue(line2, null, T2);
+    for (let t = 0; t < T1; t += 90) compassDemoLater(compassSpinStep, t);
+    compassDemoLater(() => compassDemoGoTo(2), T1);
+  } else if (stage === 2) {
+    playRoom4Dialogue(COMPASS_DEMO_LINES[1], null, T2);
+    // the spin slows down (gaps grow); on a restart it first spins fast for a moment
     let t = 0, gap = 110;
-    if (restart) {
-      for (; t < 1200; t += 90) compassDemoLater(() => setCompassFrame(COMPASS_SPIN_ORDER[i++ % 4]), t);
-    }
+    if (compassDemoRestart) for (; t < 1200; t += 90) compassDemoLater(compassSpinStep, t);
     while (t < T2 - 700) {
-      compassDemoLater(() => setCompassFrame(COMPASS_SPIN_ORDER[i++ % 4]), t);
+      compassDemoLater(compassSpinStep, t);
       t += gap;
       gap = Math.round(gap * 1.28);
     }
-  }, T1);
-  // third line: settled with the red end on the right, then the four answers
-  compassDemoLater(() => {
+    compassDemoLater(() => compassDemoGoTo(3), T2);
+  } else {
+    // settled with the red end on the right, then the question and the four answers
     el('compass-overlay-img').src = COMPASS_BY_WALL.room4;
     compassWall = 'room4';
     compassLock = false;
     compassDemoRunning = false;
-    playRoom4Dialogue(line3, null, T3);
-    lastRoom4Line = { text: line3, audioId: null };
+    compassDemoStage = 0;
+    playRoom4Dialogue(COMPASS_DEMO_LINES[2], null, T3);
+    lastRoom4Line = { text: COMPASS_DEMO_LINES[2], audioId: null };
     showDirButtons();
-  }, T1 + T2);
+  }
+}
+function runCompassDemo(restart) {
+  cancelCompassDemo();
+  compassLock = true;
+  compassDemoRunning = true;
+  compassDemoRestart = !!restart;
+  Object.keys(COMPASS_SFX_URLS).forEach(loadCompassSfx);
+  compassDemoGoTo(restart ? 2 : 1);
 }
 document.querySelectorAll('.compass-dir-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -2542,7 +2553,14 @@ function stopRoom4Dialogue() {
   else el('room4-dialogue').classList.add('hidden');
   if (activeDialogueStop === stopRoom4Dialogue) activeDialogueStop = null;
 }
-el('room4-dialogue-skip').addEventListener('click', stopRoom4Dialogue);
+el('room4-dialogue-skip').addEventListener('click', () => {
+  // during the compass demo, skipping a phrase moves on to the next one; the compass stays
+  if (compassDemoRunning && compassDemoStage >= 1 && compassDemoStage <= 2) {
+    compassDemoGoTo(compassDemoStage + 1);
+    return;
+  }
+  stopRoom4Dialogue();
+});
 
 el('nor-room4-img').addEventListener('click', () => {
   if (lastRoom4Line) {

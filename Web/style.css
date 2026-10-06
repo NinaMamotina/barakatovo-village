@@ -554,7 +554,8 @@ html, body {
   top: 12%;
   width: 46%;
   pointer-events: none;
-  z-index: 45;
+  /* above the open compass, so a tap on "Пропустить" can never fall through onto it */
+  z-index: 65;
 }
 #room4-dialogue-bubble {
   position: relative;
