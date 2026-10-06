@@ -2,6 +2,17 @@ const el = (id) => document.getElementById(id);
 
 const dbToVol = (db) => Math.pow(10, db / 20);
 
+// Everything that is only a head start (other pictures, the big sounds) waits until the first
+// picture of the game is on screen, so "Деревня Баракатово" itself appears as fast as possible.
+function afterFirstPicture(cb) {
+  const pic = document.getElementById('intro-frame-1');
+  let done = false;
+  const go = () => { if (!done) { done = true; setTimeout(cb, 300); } };
+  if (!pic || (pic.complete && pic.naturalWidth > 0)) go();
+  else { pic.addEventListener('load', go, { once: true }); pic.addEventListener('error', go, { once: true }); setTimeout(go, 6000); }
+}
+
+
 // master audio bus: every sound in the game passes through a gentle limiter
 // so nothing spikes or clips; voice lines additionally get a rumble cut + leveling
 let masterCtx = null;
@@ -254,7 +265,11 @@ function installAudioShims() {
     const ia = first.indexOf(a.id), ib = first.indexOf(b.id);
     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
   });
-  pumpAudioPreload();
+  afterFirstPicture(() => {
+    pumpAudioPreload();
+    // the long loops (nasheed, azan, bathroom ...) are fetched a little later still
+    setTimeout(() => LONG_AUDIO_IDS.forEach(id => { const a = document.getElementById(id); if (a) { a.preload = 'auto'; try { a.load(); } catch (e) {} } }), 3000);
+  });
 }
 
 // the computer's running hum loops while it is switched on and the player is
@@ -597,9 +612,9 @@ const COMPASS_BY_WALL = {
   room3: 'assets/img/room4/compass-room3.webp?v=2',
   room4: 'assets/img/room4/compass-room4.webp?v=2',
 };
-Object.values(COMPASS_BY_WALL).forEach(src => { new Image().src = src; });
+afterFirstPicture(() => Object.values(COMPASS_BY_WALL).forEach(src => { new Image().src = src; }));
 // computer pictures are decoded ahead of time: opening an app or a photo must never wait for a download
-[
+afterFirstPicture(() => [
   'assets/img/room3/apps/cookies.jpg?v=1',
   'assets/img/room3/apps/doc-notes.jpg?v=1',
   'assets/img/room3/apps/doc-room-map.webp?v=1',
@@ -621,7 +636,7 @@ Object.values(COMPASS_BY_WALL).forEach(src => { new Image().src = src; });
   'assets/img/room3/video-frame.webp?v=1',
   'assets/img/room3/video-top-layer.webp?v=1',
   'assets/img/room3/wall3.jpg?v=1',
-].forEach(src => { const im = new Image(); im.src = src; });
+].forEach(src => { const im = new Image(); im.src = src; }));
 
 
 // closeups and side rooms keep the compass of the wall they belong to, so
@@ -1262,7 +1277,7 @@ let pendingBagFollowUp = null;
 
 // warm the browser's cache/decoder for the big room2/bath images so there's
 // no partial-paint flash the first time each screen is shown
-[
+afterFirstPicture(() => [
   'assets/img/room2/door-open.webp?v=2',
   'assets/img/room2/bath-no-nor.jpg?v=1',
   'assets/img/room2/bath-nor.jpg?v=1',
@@ -1274,7 +1289,7 @@ let pendingBagFollowUp = null;
   'assets/img/window/mosque-2000.webp?v=4',
   'assets/img/bed/getup.webp?v=1',
   'assets/img/bed/fixed.webp?v=1',
-].forEach(src => { new Image().src = src; });
+].forEach(src => { new Image().src = src; }));
 
 el('hit-to-room2').addEventListener('click', () => {
   if (state.talking) return;

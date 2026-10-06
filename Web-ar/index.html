@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>قرية بركاتوفو</title>
+<link rel="preload" as="image" href="assets/img/intro/intro-1.jpg?v=2" fetchpriority="high">
 <link rel="stylesheet" href="style.css?v=165">
 </head>
 <body>
@@ -13,14 +14,14 @@
 
     <!-- ===================== ROOM ===================== -->
     <div id="scene-room" class="screen active">
-      <img class="full bg" src="assets/img/background.jpg?v=1" alt="">
-      <img id="bed-img" class="full" src="assets/img/bed/sleeping.webp?v=1" alt="">
+      <img fetchpriority="low" class="full bg" src="assets/img/background.jpg?v=1" alt="">
+      <img fetchpriority="low" id="bed-img" class="full" src="assets/img/bed/sleeping.webp?v=1" alt="">
 
-      <img id="window-img-room" class="full" src="assets/img/window/closed-2000.webp?v=4" alt="">
+      <img fetchpriority="low" id="window-img-room" class="full" src="assets/img/window/closed-2000.webp?v=4" alt="">
       <button id="hit-shutters" class="hit"></button>
 
       <button id="hit-clock" class="hit round-hit">
-        <img class="clock-icon-face" src="assets/img/clock/face.webp?v=1" alt="">
+        <img fetchpriority="low" class="clock-icon-face" src="assets/img/clock/face.webp?v=1" alt="">
         <div class="clock-icon-hand hour"></div>
         <div class="clock-icon-hand minute"></div>
       </button>
@@ -34,7 +35,7 @@
       </button>
 
       <div id="nor-box" class="hitbox hidden">
-        <img id="nor-img" src="assets/img/redress/redress-1.webp?v=1" alt="">
+        <img fetchpriority="low" id="nor-img" src="assets/img/redress/redress-1.webp?v=1" alt="">
       </div>
       <button id="hit-nor" class="hit hidden"></button>
 
@@ -55,7 +56,7 @@
     <div id="scene-window" class="screen">
       <button class="back-btn" data-back-window>‹</button>
       <div id="window-zoom-wrap">
-        <img id="window-img-closeup" class="full" src="assets/img/window/closed-2000.webp?v=4" alt="">
+        <img fetchpriority="low" id="window-img-closeup" class="full" src="assets/img/window/closed-2000.webp?v=4" alt="">
         <button id="hit-open-shutters" class="hit"></button>
         <button id="hit-mosque" class="hit hidden"></button>
       </div>
@@ -65,9 +66,9 @@
     <div id="scene-clock" class="screen">
       <button class="back-btn" data-back>‹</button>
       <div id="clock-face-wrap">
-        <img class="face" src="assets/img/clock/face.webp?v=1" alt="">
-        <div class="hand" id="hand-hour"><img src="assets/img/clock/hour-hand.webp" alt=""></div>
-        <div class="hand" id="hand-minute"><img src="assets/img/clock/minute-hand.webp" alt=""></div>
+        <img fetchpriority="low" class="face" src="assets/img/clock/face.webp?v=1" alt="">
+        <div class="hand" id="hand-hour"><img fetchpriority="low" src="assets/img/clock/hour-hand.webp" alt=""></div>
+        <div class="hand" id="hand-minute"><img fetchpriority="low" src="assets/img/clock/minute-hand.webp" alt=""></div>
       </div>
       <div id="time-readout">12 : 00</div>
       <div id="clock-success" class="hidden">
@@ -79,15 +80,15 @@
         <div class="control-group">
           <span class="label">الساعة</span>
           <div class="control-buttons">
-            <button class="ctrl-btn pink" id="btn-hour-left"><img src="assets/img/clock/hour-down.webp" alt=""></button>
-            <button class="ctrl-btn pink" id="btn-hour-right"><img src="assets/img/clock/hour-up.webp" alt=""></button>
+            <button class="ctrl-btn pink" id="btn-hour-left"><img fetchpriority="low" src="assets/img/clock/hour-down.webp" alt=""></button>
+            <button class="ctrl-btn pink" id="btn-hour-right"><img fetchpriority="low" src="assets/img/clock/hour-up.webp" alt=""></button>
           </div>
         </div>
         <div class="control-group">
           <span class="label">الدقيقة</span>
           <div class="control-buttons">
-            <button class="ctrl-btn yellow" id="btn-min-left"><img src="assets/img/clock/min-down.webp" alt=""></button>
-            <button class="ctrl-btn yellow" id="btn-min-right"><img src="assets/img/clock/min-up.webp" alt=""></button>
+            <button class="ctrl-btn yellow" id="btn-min-left"><img fetchpriority="low" src="assets/img/clock/min-down.webp" alt=""></button>
+            <button class="ctrl-btn yellow" id="btn-min-right"><img fetchpriority="low" src="assets/img/clock/min-up.webp" alt=""></button>
           </div>
         </div>
       </div>
@@ -109,12 +110,12 @@
 
     <!-- ===================== ROOM 2 (الجدار مع الخزانة وباب الحمام) ===================== -->
     <div id="scene-room2" class="screen">
-      <img class="full" src="assets/img/room2/wall2.webp?v=5" alt="">
-      <img id="wardrobe-img" class="full" src="assets/img/room2/wardrobe.webp?v=2" alt="">
-      <img id="bag-img" src="assets/img/room2/bag-item.webp?v=2" alt="">
-      <img id="boots-img" src="assets/img/room2/boots-item.webp?v=1" alt="">
-      <img id="door-img" class="full" src="assets/img/room2/door-closed.webp?v=2" alt="">
-      <img id="nor-redress-img" class="hidden" src="assets/img/redress/redress-1.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room2/wall2.webp?v=5" alt="">
+      <img fetchpriority="low" id="wardrobe-img" class="full" src="assets/img/room2/wardrobe.webp?v=2" alt="">
+      <img fetchpriority="low" id="bag-img" src="assets/img/room2/bag-item.webp?v=2" alt="">
+      <img fetchpriority="low" id="boots-img" src="assets/img/room2/boots-item.webp?v=1" alt="">
+      <img fetchpriority="low" id="door-img" class="full" src="assets/img/room2/door-closed.webp?v=2" alt="">
+      <img fetchpriority="low" id="nor-redress-img" class="hidden" src="assets/img/redress/redress-1.webp?v=1" alt="">
       <button id="hit-door" class="hit"></button>
       <button id="hit-wardrobe-drawer" class="hit"></button>
       <button id="hit-bag" class="hit"></button>
@@ -136,9 +137,9 @@
 
     <!-- ===================== ROOM 3 (переходная стена) ===================== -->
     <div id="scene-room3" class="screen">
-      <img class="full" src="assets/img/room3/wall3.jpg?v=1" alt="">
-      <img class="full" src="assets/img/room3/desk.webp?v=1" alt="">
-      <img id="computer-far-img" class="full" src="assets/img/room3/computer-off-far.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room3/wall3.jpg?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room3/desk.webp?v=1" alt="">
+      <img fetchpriority="low" id="computer-far-img" class="full" src="assets/img/room3/computer-off-far.webp?v=1" alt="">
       <button id="hit-computer" class="hit"></button>
       <button id="hit-room3-to-room2" class="side-nav left">›</button>
       <button id="hit-room3-to-room4" class="side-nav right">‹</button>
@@ -147,10 +148,10 @@
     <!-- ===================== КРУПНЫЙ ПЛАН: КОМПЬЮТЕР ===================== -->
     <div id="scene-computer" class="screen">
       <button class="back-btn" data-back-computer>‹</button>
-      <img id="computer-wall-bg" class="full" src="assets/img/room3/wall3.jpg?v=1" alt="">
-      <img id="computer-closeup-img" class="full" src="assets/img/room3/computer-off-closeup.webp?v=1" alt="">
-      <img id="computer-icons-img" class="full hidden" src="assets/img/room3/icons-closeup.webp?v=1" alt="">
-      <img id="computer-internet-icon-img" class="full hidden" src="assets/img/room3/internet-icon-closeup.webp?v=1" alt="">
+      <img fetchpriority="low" id="computer-wall-bg" class="full" src="assets/img/room3/wall3.jpg?v=1" alt="">
+      <img fetchpriority="low" id="computer-closeup-img" class="full" src="assets/img/room3/computer-off-closeup.webp?v=1" alt="">
+      <img fetchpriority="low" id="computer-icons-img" class="full hidden" src="assets/img/room3/icons-closeup.webp?v=1" alt="">
+      <img fetchpriority="low" id="computer-internet-icon-img" class="full hidden" src="assets/img/room3/internet-icon-closeup.webp?v=1" alt="">
       <button id="hit-computer-power" class="hit"></button>
       <button id="hit-internet-icon" class="hit hidden"></button>
       <button id="hit-icon-study" class="hit hidden"></button>
@@ -158,13 +159,13 @@
       <button id="hit-icon-documents" class="hit hidden"></button>
 
       <div id="computer-video-wrap" class="hidden">
-        <img id="computer-video-bg" src="assets/img/room3/video-bg.webp?v=2" alt="">
+        <img fetchpriority="low" id="computer-video-bg" src="assets/img/room3/video-bg.webp?v=2" alt="">
         <video id="computer-video" playsinline preload="metadata" poster="assets/img/room3/video-bg.webp?v=2">
           <source src="assets/video/compass-tutorial.mp4?v=2" type="video/mp4">
         </video>
       </div>
-      <img id="computer-video-frame" class="full hidden" src="assets/img/room3/video-frame.webp?v=1" alt="">
-      <img id="computer-video-top-layer" class="full hidden" src="assets/img/room3/video-top-layer.webp?v=1" alt="">
+      <img fetchpriority="low" id="computer-video-frame" class="full hidden" src="assets/img/room3/video-frame.webp?v=1" alt="">
+      <img fetchpriority="low" id="computer-video-top-layer" class="full hidden" src="assets/img/room3/video-top-layer.webp?v=1" alt="">
       <button id="computer-video-play" class="hidden" aria-label="Play">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
       </button>
@@ -185,7 +186,7 @@
 
       <div id="computer-window" class="hidden">
         <div id="computer-window-menu" class="hidden"></div>
-        <img id="computer-window-image" class="hidden" src="" alt="">
+        <img fetchpriority="low" id="computer-window-image" class="hidden" src="" alt="">
         <video id="computer-window-video" class="hidden" playsinline controls></video>
       </div>
       <button id="computer-window-back" class="computer-window-nav hidden" aria-label="رجوع">‹</button>
@@ -194,17 +195,17 @@
 
     <!-- ===================== ROOM 4 (стена с дверью, тумбочкой и доской) ===================== -->
     <div id="scene-room4" class="screen">
-      <img class="full" src="assets/img/room4/wall4.webp?v=1" alt="">
-      <img class="full" src="assets/img/room4/door-closed.webp?v=1" alt="">
-      <img class="full" src="assets/img/room4/board-empty.webp?v=1" alt="">
-      <img class="full" src="assets/img/room4/board-sticker-1.webp?v=1" alt="">
-      <img class="full" src="assets/img/room4/board-sticker-2.webp?v=1" alt="">
-      <img class="full" src="assets/img/room4/board-sticker-3.webp?v=1" alt="">
-      <img class="full" src="assets/img/room4/board-sticker-4.webp?v=1" alt="">
-      <img class="full" src="assets/img/room4/board-sticker-5.webp?v=2" alt="">
-      <img id="tumbochka-img" class="full" src="assets/img/room4/tumbochka-closed.webp?v=1" alt="">
-      <img id="compas-on-tumbochka-img" class="full" src="assets/img/room4/compas-on-tumbochka.webp?v=1" alt="">
-      <img id="carpet-placed-img" class="full hidden" src="assets/img/room4/carpet-w.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/wall4.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/door-closed.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-empty.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-1.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-2.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-3.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-4.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-5.webp?v=2" alt="">
+      <img fetchpriority="low" id="tumbochka-img" class="full" src="assets/img/room4/tumbochka-closed.webp?v=1" alt="">
+      <img fetchpriority="low" id="compas-on-tumbochka-img" class="full" src="assets/img/room4/compas-on-tumbochka.webp?v=1" alt="">
+      <img fetchpriority="low" id="carpet-placed-img" class="full hidden" src="assets/img/room4/carpet-w.webp?v=1" alt="">
 
       <button id="hit-board" class="hit"></button>
       <button id="hit-tumbochka-top" class="hit"></button>
@@ -214,7 +215,7 @@
       <button id="hit-room4-to-room3" class="side-nav left">›</button>
       <button id="hit-room4-to-room" class="side-nav right">‹</button>
 
-      <img id="nor-room4-img" class="hidden" src="assets/img/redress/redress-6.webp?v=1" alt="">
+      <img fetchpriority="low" id="nor-room4-img" class="hidden" src="assets/img/redress/redress-6.webp?v=1" alt="">
       <div id="room4-dialogue" class="hidden">
         <div id="room4-dialogue-bubble">
           <p id="room4-dialogue-text"></p>
@@ -227,16 +228,16 @@
     <!-- ===================== КРУПНЫЙ ПЛАН: ЯЩИК ТУМБОЧКИ ===================== -->
     <div id="scene-tumbochka-drawer" class="screen">
       <button class="back-btn" data-back-tumbochka-drawer>‹</button>
-      <img class="full" src="assets/img/room4/tumbochka-opened-closeup.webp?v=1" alt="">
-      <img id="carpet-img" class="full" src="assets/img/room4/carpet-in-tumbochka.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/tumbochka-opened-closeup.webp?v=1" alt="">
+      <img fetchpriority="low" id="carpet-img" class="full" src="assets/img/room4/carpet-in-tumbochka.webp?v=1" alt="">
       <button id="hit-carpet" class="hit"></button>
     </div>
 
     <!-- ===================== КРУПНЫЙ ПЛАН: ВЕРХ ТУМБОЧКИ ===================== -->
     <div id="scene-tumbochka-top" class="screen">
       <button class="back-btn" data-back-tumbochka-top>‹</button>
-      <img class="full" src="assets/img/room4/tumbochka-top.webp?v=1" alt="">
-      <img id="compas-big-img" class="full" src="assets/img/room4/compas-big.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room4/tumbochka-top.webp?v=1" alt="">
+      <img fetchpriority="low" id="compas-big-img" class="full" src="assets/img/room4/compas-big.webp?v=1" alt="">
       <button id="hit-compas-big" class="hit"></button>
     </div>
 
@@ -244,12 +245,12 @@
     <div id="scene-board" class="screen">
       <button class="back-btn" data-back-board>‹</button>
       <div id="board-closeup-wrap">
-        <img class="full" src="assets/img/room4/board-empty.webp?v=1" alt="">
-        <img class="full" src="assets/img/room4/board-sticker-1.webp?v=1" alt="">
-        <img class="full" src="assets/img/room4/board-sticker-2.webp?v=1" alt="">
-        <img class="full" src="assets/img/room4/board-sticker-3.webp?v=1" alt="">
-        <img class="full" src="assets/img/room4/board-sticker-4.webp?v=1" alt="">
-        <img class="full" src="assets/img/room4/board-sticker-5.webp?v=2" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-empty.webp?v=1" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-1.webp?v=1" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-2.webp?v=1" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-3.webp?v=1" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-4.webp?v=1" alt="">
+        <img fetchpriority="low" class="full" src="assets/img/room4/board-sticker-5.webp?v=2" alt="">
         <button id="hit-board-sticker-1" class="hit"></button>
         <button id="hit-board-sticker-2" class="hit"></button>
         <button id="hit-board-sticker-3" class="hit"></button>
@@ -259,16 +260,16 @@
     </div>
 
     <div id="sticker-lightbox" class="hidden">
-      <img id="sticker-lightbox-img" src="" alt="">
+      <img fetchpriority="low" id="sticker-lightbox-img" src="" alt="">
     </div>
 
     <!-- ===================== خزانة الملابس (تكبير) ===================== -->
     <div id="scene-wardrobe" class="screen">
       <button class="back-btn" data-back-wardrobe>‹</button>
-      <img class="full" src="assets/img/room2/wardrobe-closeup.webp?v=4" alt="">
-      <img id="hijab-img" src="assets/img/room2/hijab-item.webp?v=1" alt="">
-      <img id="dress-img" src="assets/img/room2/dress-item.webp?v=1" alt="">
-      <img id="socks-img" src="assets/img/room2/socks-item.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room2/wardrobe-closeup.webp?v=4" alt="">
+      <img fetchpriority="low" id="hijab-img" src="assets/img/room2/hijab-item.webp?v=1" alt="">
+      <img fetchpriority="low" id="dress-img" src="assets/img/room2/dress-item.webp?v=1" alt="">
+      <img fetchpriority="low" id="socks-img" src="assets/img/room2/socks-item.webp?v=1" alt="">
       <button id="hit-hijab" class="hit"></button>
       <button id="hit-dress" class="hit"></button>
       <button id="hit-socks" class="hit"></button>
@@ -277,14 +278,14 @@
     <!-- ===================== КРУПНЫЙ ПЛАН ЗЕРКАЛА ===================== -->
     <div id="scene-mirror" class="screen">
       <button class="back-btn" data-back-mirror>‹</button>
-      <img class="full" src="assets/img/room2/mirror-closeup.webp?v=1" alt="">
+      <img fetchpriority="low" class="full" src="assets/img/room2/mirror-closeup.webp?v=1" alt="">
       <button id="hit-booklet-closeup" class="hit"></button>
     </div>
 
     <!-- ===================== الحمام ===================== -->
     <div id="scene-bath" class="screen">
-      <img id="bath-img" class="full" src="assets/img/room2/bath-no-nor.jpg?v=1" alt="">
-      <img id="cardkit-bath-prop" class="full hidden" src="assets/img/room2/cardkit-in-bath.webp?v=2" alt="">
+      <img fetchpriority="low" id="bath-img" class="full" src="assets/img/room2/bath-no-nor.jpg?v=1" alt="">
+      <img fetchpriority="low" id="cardkit-bath-prop" class="full hidden" src="assets/img/room2/cardkit-in-bath.webp?v=2" alt="">
       <button id="hit-bath-door" class="hit"></button>
       <button id="hit-cards" class="hit"></button>
 
@@ -301,7 +302,7 @@
     <div id="scene-cards" class="screen">
       <button class="back-btn" data-back-cards>‹</button>
       <div id="board-frame"></div>
-      <img id="cards-locked-img" src="assets/img/room2/cards/cardkit-bg.webp?v=2" alt="">
+      <img fetchpriority="low" id="cards-locked-img" src="assets/img/room2/cards/cardkit-bg.webp?v=2" alt="">
       <div id="card-slots"></div>
       <div id="card-arrows"></div>
       <div id="card-layer"></div>
@@ -321,21 +322,21 @@
         <p>تم ترتيب البطاقات بشكل صحيح!</p>
         <span class="tap-hint">متابعة</span>
       </div>
-      <img id="card-reward" class="hidden" src="assets/img/room2/cards/card-1.jpg?v=1" alt="">
+      <img fetchpriority="low" id="card-reward" class="hidden" src="assets/img/room2/cards/card-1.jpg?v=1" alt="">
     </div>
 
     <!-- ===================== مشهد الوضوء (تقطيع cut scene.PNG) ===================== -->
     <div id="scene-cutscene" class="screen">
-      <img class="cutscene-frame active" id="cutscene-1" src="assets/img/cutscene/cutscene-1.webp?v=1" alt="">
-      <img class="cutscene-frame" id="cutscene-2" src="assets/img/cutscene/cutscene-2.webp?v=1" alt="">
-      <img class="cutscene-frame" id="cutscene-3" src="assets/img/cutscene/cutscene-3.webp?v=1" alt="">
-      <img class="cutscene-frame" id="cutscene-4" src="assets/img/cutscene/cutscene-4.webp?v=1" alt="">
+      <img fetchpriority="low" class="cutscene-frame active" id="cutscene-1" src="assets/img/cutscene/cutscene-1.webp?v=1" alt="">
+      <img fetchpriority="low" class="cutscene-frame" id="cutscene-2" src="assets/img/cutscene/cutscene-2.webp?v=1" alt="">
+      <img fetchpriority="low" class="cutscene-frame" id="cutscene-3" src="assets/img/cutscene/cutscene-3.webp?v=1" alt="">
+      <img fetchpriority="low" class="cutscene-frame" id="cutscene-4" src="assets/img/cutscene/cutscene-4.webp?v=1" alt="">
       <button id="cutscene-skip" class="cutscene-skip-btn">تخطي</button>
     </div>
 
     <!-- ===================== مشهد البداية (تقطيع Start of the game.png) ===================== -->
     <div id="scene-intro" class="screen">
-      <img class="cutscene-frame active" id="intro-frame-1" src="assets/img/intro/intro-1.jpg?v=2" alt="">
+      <img class="cutscene-frame active" id="intro-frame-1" fetchpriority="high" src="assets/img/intro/intro-1.jpg?v=2" alt="">
       <img class="cutscene-frame" id="intro-frame-2" src="assets/img/intro/intro-2.jpg?v=2" alt="">
       <img class="cutscene-frame" id="intro-frame-3" src="assets/img/intro/intro-3.jpg?v=2" alt="">
       <img class="cutscene-frame" id="intro-frame-4" src="assets/img/intro/intro-4.jpg?v=2" alt="">
@@ -402,46 +403,46 @@
   </div>
 </div>
 
-<audio preload="auto" id="audio-azan" src="assets/audio/azan.m4a"></audio>
-<audio preload="auto" id="audio-bathroom-amb" src="assets/audio/bathroom.mp3" loop></audio>
-<audio preload="auto" id="audio-narrator-clock" src="assets/audio/narrator-clock.mp3"></audio>
-<audio preload="auto" id="audio-narrator-cards" src="assets/audio/narrator-cards.mp3"></audio>
-<audio preload="auto" id="audio-nasheed" src="assets/audio/nasheed_1.m4a?v=1" loop></audio>
-<audio preload="auto" id="audio-narrator-reset" src="assets/audio/narrator-reset.mp3"></audio>
-<audio preload="auto" id="audio-computer-click" src="assets/audio/computer-click.m4a?v=1"></audio>
-<audio preload="auto" id="audio-compturn" src="assets/audio/compturn.mp3?v=1"></audio>
-<audio preload="auto" id="audio-narrator-intro-1" src="assets/audio/narrator-intro-1.mp3?v=1"></audio>
-<audio preload="auto" id="audio-narrator-intro-2" src="assets/audio/narrator-intro-2.mp3?v=1"></audio>
-<audio preload="auto" id="audio-narrator-intro-3" src="assets/audio/narrator-intro-3.mp3?v=1"></audio>
-<audio preload="auto" id="audio-narrator-intro-4" src="assets/audio/narrator-intro-4.mp3?v=1"></audio>
-<audio preload="auto" id="audio-nor10" src="assets/audio/nor10.m4a"></audio>
-<audio preload="auto" id="audio-nor1" src="assets/audio/nor1.m4a"></audio>
-<audio preload="auto" id="audio-nor2" src="assets/audio/nor2.m4a"></audio>
-<audio preload="auto" id="audio-nor3" src="assets/audio/nor3.m4a"></audio>
-<audio preload="auto" id="audio-nor4" src="assets/audio/nor4.m4a"></audio>
-<audio preload="auto" id="audio-nor5" src="assets/audio/nor5.m4a"></audio>
-<audio preload="auto" id="audio-nor6" src="assets/audio/nor6.m4a"></audio>
-<audio preload="auto" id="audio-nor7" src="assets/audio/nor7.m4a"></audio>
-<audio preload="auto" id="audio-nor8" src="assets/audio/nor8.m4a"></audio>
-<audio preload="auto" id="audio-nor9" src="assets/audio/nor9.m4a"></audio>
-<audio preload="auto" id="audio-clock-loop" src="assets/audio/clocks.mp3"></audio>
-<audio preload="auto" id="audio-buttonclick" src="assets/audio/buttonclick.wav"></audio>
-<audio preload="auto" id="audio-puzzlesolved" src="assets/audio/puzzlesolved.m4a?v=1"></audio>
-<audio preload="auto" id="audio-door" src="assets/audio/door.m4a?v=1"></audio>
-<audio preload="auto" id="audio-wardrobe" src="assets/audio/wardrobe.m4a?v=1"></audio>
-<audio preload="auto" id="audio-cardshuffle" src="assets/audio/cardshuffling.mp3"></audio>
-<audio preload="auto" id="audio-move" src="assets/audio/move.mp3"></audio>
-<audio preload="auto" id="audio-tap" src="assets/audio/tap.m4a?v=1"></audio>
-<audio preload="auto" id="audio-intro-village" src="assets/audio/village.m4a?v=1"></audio>
-<audio preload="auto" id="audio-intro-family" src="assets/audio/family-murmur.m4a?v=2"></audio>
-<audio preload="auto" id="audio-backtoinv" src="assets/audio/backtoinventory.m4a?v=1"></audio>
-<audio preload="auto" id="audio-water-valve" src="assets/audio/water-valve.m4a?v=1"></audio>
-<audio preload="auto" id="audio-water-in-sink" src="assets/audio/water-in-sink.m4a?v=1"></audio>
-<audio preload="auto" id="audio-faucet-sink" src="assets/audio/faucet-sink.mp3"></audio>
-<audio preload="auto" id="audio-drops" src="assets/audio/drops.mp3"></audio>
-<audio preload="auto" id="audio-claps" src="assets/audio/claps.mp3"></audio>
-<audio preload="auto" id="audio-towel" src="assets/audio/towel.mp3"></audio>
-<audio preload="auto" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
+<audio preload="none" id="audio-azan" src="assets/audio/azan.m4a"></audio>
+<audio preload="none" id="audio-bathroom-amb" src="assets/audio/bathroom.mp3" loop></audio>
+<audio preload="none" id="audio-narrator-clock" src="assets/audio/narrator-clock.mp3"></audio>
+<audio preload="none" id="audio-narrator-cards" src="assets/audio/narrator-cards.mp3"></audio>
+<audio preload="none" id="audio-nasheed" src="assets/audio/nasheed_1.m4a?v=1" loop></audio>
+<audio preload="none" id="audio-narrator-reset" src="assets/audio/narrator-reset.mp3"></audio>
+<audio preload="none" id="audio-computer-click" src="assets/audio/computer-click.m4a?v=1"></audio>
+<audio preload="none" id="audio-compturn" src="assets/audio/compturn.mp3?v=1"></audio>
+<audio preload="none" id="audio-narrator-intro-1" src="assets/audio/narrator-intro-1.mp3?v=1"></audio>
+<audio preload="none" id="audio-narrator-intro-2" src="assets/audio/narrator-intro-2.mp3?v=1"></audio>
+<audio preload="none" id="audio-narrator-intro-3" src="assets/audio/narrator-intro-3.mp3?v=1"></audio>
+<audio preload="none" id="audio-narrator-intro-4" src="assets/audio/narrator-intro-4.mp3?v=1"></audio>
+<audio preload="none" id="audio-nor10" src="assets/audio/nor10.m4a"></audio>
+<audio preload="none" id="audio-nor1" src="assets/audio/nor1.m4a"></audio>
+<audio preload="none" id="audio-nor2" src="assets/audio/nor2.m4a"></audio>
+<audio preload="none" id="audio-nor3" src="assets/audio/nor3.m4a"></audio>
+<audio preload="none" id="audio-nor4" src="assets/audio/nor4.m4a"></audio>
+<audio preload="none" id="audio-nor5" src="assets/audio/nor5.m4a"></audio>
+<audio preload="none" id="audio-nor6" src="assets/audio/nor6.m4a"></audio>
+<audio preload="none" id="audio-nor7" src="assets/audio/nor7.m4a"></audio>
+<audio preload="none" id="audio-nor8" src="assets/audio/nor8.m4a"></audio>
+<audio preload="none" id="audio-nor9" src="assets/audio/nor9.m4a"></audio>
+<audio preload="none" id="audio-clock-loop" src="assets/audio/clocks.mp3"></audio>
+<audio preload="none" id="audio-buttonclick" src="assets/audio/buttonclick.wav"></audio>
+<audio preload="none" id="audio-puzzlesolved" src="assets/audio/puzzlesolved.m4a?v=1"></audio>
+<audio preload="none" id="audio-door" src="assets/audio/door.m4a?v=1"></audio>
+<audio preload="none" id="audio-wardrobe" src="assets/audio/wardrobe.m4a?v=1"></audio>
+<audio preload="none" id="audio-cardshuffle" src="assets/audio/cardshuffling.mp3"></audio>
+<audio preload="none" id="audio-move" src="assets/audio/move.mp3"></audio>
+<audio preload="none" id="audio-tap" src="assets/audio/tap.m4a?v=1"></audio>
+<audio preload="none" id="audio-intro-village" src="assets/audio/village.m4a?v=1"></audio>
+<audio preload="none" id="audio-intro-family" src="assets/audio/family-murmur.m4a?v=2"></audio>
+<audio preload="none" id="audio-backtoinv" src="assets/audio/backtoinventory.m4a?v=1"></audio>
+<audio preload="none" id="audio-water-valve" src="assets/audio/water-valve.m4a?v=1"></audio>
+<audio preload="none" id="audio-water-in-sink" src="assets/audio/water-in-sink.m4a?v=1"></audio>
+<audio preload="none" id="audio-faucet-sink" src="assets/audio/faucet-sink.mp3"></audio>
+<audio preload="none" id="audio-drops" src="assets/audio/drops.mp3"></audio>
+<audio preload="none" id="audio-claps" src="assets/audio/claps.mp3"></audio>
+<audio preload="none" id="audio-towel" src="assets/audio/towel.mp3"></audio>
+<audio preload="none" id="audio-clothes" src="assets/audio/clothes.mp3"></audio>
 
 <script>
 /* Telegram Mini App: only when opened inside Telegram, load its helper, fill the whole screen and keep swipes from closing the game */
@@ -462,6 +463,6 @@
   document.head.appendChild(s);
 })();
 </script>
-<script src="game.js?v=237"></script>
+<script src="game.js?v=238"></script>
 </body>
 </html>
