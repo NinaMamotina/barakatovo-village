@@ -616,7 +616,7 @@ afterFirstPicture(() => Object.values(COMPASS_BY_WALL).forEach(src => { new Imag
 // computer pictures are decoded ahead of time: opening an app or a photo must never wait for a download
 afterFirstPicture(() => [
   'assets/img/room3/apps/cookies.jpg?v=3',
-  'assets/img/room3/apps/doc-notes.jpg?v=3',
+  'assets/img/room3/apps/doc-notes.jpg?v=4',
   'assets/img/room3/apps/doc-room-map.webp?v=3',
   'assets/img/room3/apps/games-blocked.jpg?v=3',
   'assets/img/room3/apps/photo-1.jpg?v=1',
@@ -1352,11 +1352,11 @@ const COMPUTER_APPS = {
   photos: { type: 'menu', items: [
     { label: 'صورة 1', src: 'assets/img/room3/apps/photo-1.jpg?v=1', line: 'هذه هي عائلتنا كلها. أتساءل كيف تمكّنا جميعًا من الظهور في صورة واحدة؟', audio: 'audio-nor12' },
     { label: 'صورة 2', src: 'assets/img/room3/apps/photo-2.jpg?v=1', line: 'أبي يعرف كيف يساعد أيضًا. لكن أمي تقول أحيانًا إن العمل يزداد بعد مساعدته!', audio: 'audio-nor13' },
-    { label: 'صورة 3', src: 'assets/img/room3/apps/photo-3.jpg?v=1', line: 'نحن نتعلم القرآن مع العائلة كلها. أختي الصغيرة مريم تتعلم معنا أيضًا، لكنها تعلّمنا الصبر أكثر!', audio: 'audio-nor17' },
+    { label: 'صورة 3', src: 'assets/img/room3/apps/photo-3.jpg?v=1', line: 'نحن نتعلم القرآن مع العائلة كلها. أختي الصغيرة ماريا تتعلم معنا أيضًا، لكنها تعلّمنا الصبر أكثر!', audio: 'audio-nor17' },
     { label: 'صورة 4', src: 'assets/img/room3/apps/photo-4.jpg?v=1', line: 'أبي وياسين يبنيان بيتًا للعصافير. آمل ألا تكون العصافير صعبة الإرضاء!', audio: 'audio-nor15' },
   ] },
   documents: { type: 'menu', items: [
-    { label: 'ملاحظاتي', src: 'assets/img/room3/apps/doc-notes.jpg?v=3', line: 'نسيت بعض الأسئلة تمامًا. جيد أنني فكرت في كتابتها.', audio: 'audio-nor14' },
+    { label: 'ملاحظاتي', src: 'assets/img/room3/apps/doc-notes.jpg?v=4', line: 'نسيت بعض الأسئلة تمامًا. جيد أنني فكرت في كتابتها.', audio: 'audio-nor14' },
     { label: 'غرفتي', src: 'assets/img/room3/apps/doc-room-map.webp?v=3', line: 'هذه غرفتي المفضلة، مخططها من الأعلى. تجادل أبي وأخي الأكبر ياسين طويلًا في مكان كل شيء، لكن أمي هي التي رتّبت كل شيء بنفسها.', audio: 'audio-nor21' },
   ] },
 };
