@@ -2625,18 +2625,18 @@ function playCutscene() {
 el('cutscene-skip').addEventListener('click', skipCutscene);
 
 // ---------------- prayer cutscene ----------------
-// four pictures, each shown for as long as its recording lasts (opening of the prayer,
-// two "Allahu akbar", closing of the prayer); then "to be continued" with the solved-puzzle chime
-const PRAYER_FALLBACK_SECONDS = [7.9, 3.3, 3.0, 9.8];
-const PRAYER_GAP_MS = 700;
+// one continuous recording (opening of the prayer, two "Allahu akbar", closing of the prayer, joined with
+// room tone so there are no dead gaps); each picture appears exactly when its part begins.
+// then "to be continued" with the solved-puzzle chime
+const PRAYER_PART_STARTS = [0, 7.27, 9.64, 12.0]; // seconds inside prayer-all.m4a
+const PRAYER_TOTAL_SECONDS = 19.85;
+const PRAYER_VOLUME_DB = -12; // the voice sits well under the usual level
 let prayerTimers = [];
 function prayerLater(fn, ms) { prayerTimers.push(setTimeout(fn, ms)); }
 function stopPrayerAudio() {
-  for (let k = 1; k <= 4; k++) {
-    const a = el('audio-prayer-' + k);
-    a.pause();
-    a.currentTime = 0;
-  }
+  const a = el('audio-prayer-all');
+  a.pause();
+  a.currentTime = 0;
 }
 function startPrayer() {
   prayerTimers.forEach(clearTimeout);
@@ -2656,24 +2656,22 @@ function startPrayer() {
     el('prayer-frame-1').classList.add('shown');
     el('compass-fade').classList.remove('on');
   }, 700);
-  let t = 1400;
-  for (let k = 1; k <= 4; k++) {
-    const a = el('audio-prayer-' + k);
-    const secs = (a.duration && isFinite(a.duration)) ? a.duration : PRAYER_FALLBACK_SECONDS[k - 1];
-    const start = t;
-    if (k > 1) prayerLater(() => el('prayer-frame-' + k).classList.add('shown'), start);
-    prayerLater(() => {
-      routeToMaster(a, true);
-      a.currentTime = 0;
-      a.volume = dbToVol(0);
-      a.play();
-    }, start);
-    t = start + Math.round(secs * 1000) + PRAYER_GAP_MS;
+  const t0 = 1400;
+  const a = el('audio-prayer-all');
+  const total = (a.duration && isFinite(a.duration)) ? a.duration : PRAYER_TOTAL_SECONDS;
+  prayerLater(() => {
+    routeToMaster(a, true);
+    a.currentTime = 0;
+    a.volume = dbToVol(PRAYER_VOLUME_DB);
+    a.play();
+  }, t0);
+  for (let k = 2; k <= 4; k++) {
+    prayerLater(() => el('prayer-frame-' + k).classList.add('shown'), t0 + PRAYER_PART_STARTS[k - 1] * 1000);
   }
   prayerLater(() => {
     el('prayer-end').classList.add('shown');
     playSfx(el('audio-puzzlesolved'), -16);
-  }, t + 600);
+  }, t0 + total * 1000 + 800);
 }
 
 function startIntro() {
