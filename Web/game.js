@@ -2637,6 +2637,8 @@ function stopPrayerAudio() {
   const a = el('audio-prayer-all');
   a.pause();
   a.currentTime = 0;
+  const warn = document.getElementById('audio-prayer-warning');
+  if (warn) { warn.pause(); warn.currentTime = 0; }
 }
 function startPrayer() {
   prayerTimers.forEach(clearTimeout);
@@ -2653,10 +2655,13 @@ function startPrayer() {
     showScreen('prayer');
     document.querySelectorAll('.prayer-frame').forEach(f => f.classList.remove('shown'));
     el('prayer-end').classList.remove('shown');
+    el('prayer-notice').classList.remove('shown');
     el('prayer-frame-1').classList.add('shown');
     el('compass-fade').classList.remove('on');
   }, 700);
   const t0 = 1400;
+  // the notice about the prayer being shown only in parts is up for the whole film
+  prayerLater(() => el('prayer-notice').classList.add('shown'), t0);
   const a = el('audio-prayer-all');
   const total = (a.duration && isFinite(a.duration)) ? a.duration : PRAYER_TOTAL_SECONDS;
   prayerLater(() => {
@@ -2671,6 +2676,14 @@ function startPrayer() {
   prayerLater(() => {
     el('prayer-end').classList.add('shown');
     playSfx(el('audio-puzzlesolved'), -16);
+    // as "to be continued" appears, a voice reads the notice out (recording still to come)
+    const warn = document.getElementById('audio-prayer-warning');
+    if (warn) {
+      routeToMaster(warn, true);
+      warn.currentTime = 0;
+      warn.volume = dbToVol(0);
+      warn.play();
+    }
   }, t0 + total * 1000 + 800);
 }
 

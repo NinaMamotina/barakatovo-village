@@ -1982,3 +1982,25 @@ html, body {
 #stage.prayer-mode #compass-dim,
 #stage.prayer-mode #nor-follow-img,
 #stage.prayer-mode #compass-bubble { display: none !important; }
+
+#prayer-notice {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  bottom: 4%;
+  z-index: 12;
+  padding: 1.8vmin 3vmin;
+  border-radius: 14px;
+  background: rgba(20,16,12,0.62);
+  opacity: 0;
+  transition: opacity .8s ease;
+  pointer-events: none;
+}
+#prayer-notice.shown { opacity: 1; }
+#prayer-notice p {
+  margin: 0;
+  color: #f4ead9;
+  font-size: 2.3vmin;
+  line-height: 1.4;
+  text-align: center;
+}
