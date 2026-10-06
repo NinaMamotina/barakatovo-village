@@ -78,14 +78,176 @@ function ensureMasterBus() {
   if (masterCtx.state === 'suspended') masterCtx.resume();
   return masterCtx;
 }
+// ---------------------------------------------------------------------------
+// iPhone / Telegram fixes: iOS ignores <audio>.volume, starts <audio> late, clips the first
+// milliseconds and drops a second sound that starts while another one plays. So every short sound
+// is decoded once and played with the Web Audio API instead (exact volume, no delay, sounds can
+// overlap); the same element API (play / pause / currentTime / volume / ended ...) is kept, so the
+// rest of the game does not change. Only the long loops (nasheed, azan, bathroom ambience ...) stay
+// real <audio> elements, but they get their own gain node so their volume works too.
+const LONG_AUDIO_IDS = new Set(['audio-nasheed', 'audio-azan', 'audio-bathroom-amb', 'audio-drops', 'audio-faucet-sink', 'audio-towel']);
+const audioShims = new WeakMap();
+const audioBufferCache = new Map();
+const audioPreloadQueue = [];
+let audioPreloadRunning = false;
+
+function busTarget(bus) {
+  return bus === 'narrator' ? narratorBus : bus ? voiceBus : masterLimiter;
+}
+
+function loadAudioBuffer(src) {
+  if (!audioBufferCache.has(src)) {
+    const ctx = ensureMasterBus();
+    const p = fetch(src)
+      .then(r => r.arrayBuffer())
+      .then(buf => new Promise((res, rej) => ctx.decodeAudioData(buf, res, rej)));
+    audioBufferCache.set(src, p);
+    p.catch(() => audioBufferCache.delete(src));
+  }
+  return audioBufferCache.get(src);
+}
+
+// decode the sounds one after another in the background so the first taps never wait for a download
+function pumpAudioPreload() {
+  if (audioPreloadRunning) return;
+  audioPreloadRunning = true;
+  const next = () => {
+    const a = audioPreloadQueue.shift();
+    if (!a) { audioPreloadRunning = false; return; }
+    const st = audioShims.get(a);
+    loadAudioBuffer(st.src).then(b => { st.buffer = b; }).catch(() => {}).then(() => setTimeout(next, 30));
+  };
+  next();
+}
+
+function installAudioShim(a) {
+  const ctx = ensureMasterBus();
+  if (!ctx || audioShims.has(a)) return;
+  const st = {
+    src: new URL(a.getAttribute('src'), document.baseURI).href,
+    buffer: null, target: null, gain: ctx.createGain(),
+    loop: a.loop, source: null, active: new Set(), token: 0,
+    playing: false, ended: false, offset: 0, startedAt: 0, wantPlay: false,
+  };
+  audioShims.set(a, st);
+  a.preload = 'none';
+  a.removeAttribute('src');          // the browser's own audio element is not used for these
+  try { a.load(); } catch (e) {}
+
+  const stopSource = () => {
+    st.token++;
+    if (st.source) { try { st.source.stop(); } catch (e) {} st.source.disconnect(); st.source = null; }
+  };
+  const begin = (offset) => {
+    stopSource();
+    const c = ensureMasterBus();
+    const s = c.createBufferSource();
+    s.buffer = st.buffer;
+    s.loop = st.loop;
+    st.gain.disconnect();
+    st.gain.connect(st.target || masterLimiter);
+    s.connect(st.gain);
+    const token = ++st.token;
+    s.onended = () => {
+      if (token !== st.token) return;
+      st.playing = false; st.ended = !st.loop; st.offset = 0; st.source = null;
+      a.dispatchEvent(new Event('ended'));
+    };
+    const off = Math.min(Math.max(0, offset), Math.max(0, st.buffer.duration - 0.001));
+    s.start(0, off);
+    st.source = s; st.startedAt = c.currentTime; st.offset = off; st.playing = true; st.ended = false;
+    a.dispatchEvent(new Event('play'));
+    a.dispatchEvent(new Event('playing'));
+  };
+  st.begin = begin;
+
+  Object.defineProperties(a, {
+    paused: { configurable: true, get: () => !(st.playing || st.active.size > 0) },
+    ended: { configurable: true, get: () => st.ended },
+    duration: { configurable: true, get: () => (st.buffer ? st.buffer.duration : NaN) },
+    readyState: { configurable: true, get: () => (st.buffer ? 4 : 0) },
+    volume: { configurable: true, get: () => st.gain.gain.value, set: (v) => { st.gain.gain.value = Math.max(0, v); } },
+    loop: { configurable: true, get: () => st.loop, set: (v) => { st.loop = !!v; if (st.source) st.source.loop = st.loop; } },
+    currentTime: {
+      configurable: true,
+      get: () => {
+        if (!st.playing) return st.offset;
+        const t = st.offset + (ensureMasterBus().currentTime - st.startedAt);
+        return st.loop && st.buffer ? t % st.buffer.duration : Math.min(t, st.buffer ? st.buffer.duration : t);
+      },
+      set: (v) => {
+        st.offset = Math.max(0, v); st.ended = false;
+        if (st.playing) begin(st.offset);
+      },
+    },
+  });
+  a.play = () => {
+    ensureMasterBus();
+    if (st.playing) return Promise.resolve();
+    if (!st.buffer) {
+      st.wantPlay = true;
+      return loadAudioBuffer(st.src).then(b => {
+        st.buffer = b;
+        if (st.wantPlay) { st.wantPlay = false; begin(st.ended ? 0 : st.offset); }
+      });
+    }
+    begin(st.ended ? 0 : st.offset);
+    return Promise.resolve();
+  };
+  a.pause = () => {
+    st.wantPlay = false;
+    st.active.forEach(s => { try { s.stop(); } catch (e) {} });
+    st.active.clear();
+    if (!st.playing) return;
+    st.offset = a.currentTime;
+    stopSource();
+    st.playing = false;
+    a.dispatchEvent(new Event('pause'));
+  };
+  audioPreloadQueue.push(a);
+}
+
+// an independent one-shot (used by playSfx): several of them can sound at the same moment
+function playOneShot(a, db, startAt) {
+  const st = audioShims.get(a);
+  const c = ensureMasterBus();
+  const s = c.createBufferSource();
+  s.buffer = st.buffer;
+  const g = c.createGain();
+  g.gain.value = dbToVol(db);
+  s.connect(g);
+  g.connect(masterLimiter);
+  st.active.add(s);
+  s.onended = () => { st.active.delete(s); s.disconnect(); g.disconnect(); };
+  s.start(0, Math.min(startAt || 0, Math.max(0, st.buffer.duration - 0.001)));
+}
+
 function routeToMaster(audioEl, bus) {
   const ctx = ensureMasterBus();
   if (!ctx) return;
+  const shim = audioShims.get(audioEl);
+  if (shim) { shim.target = busTarget(bus); return; }
   if (routedNodes.has(audioEl)) return;
   const source = ctx.createMediaElementSource(audioEl);
-  const target = bus === 'narrator' ? narratorBus : bus ? voiceBus : masterLimiter;
-  source.connect(target);
+  const gain = ctx.createGain();
+  gain.gain.value = 1;
+  source.connect(gain);
+  gain.connect(busTarget(bus));
   routedNodes.set(audioEl, source);
+  // the <audio> element's own volume is ignored on iPhones: the gain node does the job
+  Object.defineProperty(audioEl, 'volume', {
+    configurable: true,
+    get: () => gain.gain.value,
+    set: (v) => { gain.gain.value = Math.max(0, v); },
+  });
+}
+
+function installAudioShims() {
+  if (!(window.AudioContext || window.webkitAudioContext)) return;
+  document.querySelectorAll('audio').forEach(a => {
+    if (!LONG_AUDIO_IDS.has(a.id) && a.getAttribute('src')) installAudioShim(a);
+  });
+  pumpAudioPreload();
 }
 
 // the computer's running hum loops while it is switched on and the player is
@@ -204,11 +366,44 @@ function playComputerClick() {
 }
 
 function playSfx(audioEl, db, startAt) {
+  const st = audioShims.get(audioEl);
+  if (st && st.buffer) {          // decoded: play it as its own overlapping one-shot, no delay
+    ensureMasterBus();
+    playOneShot(audioEl, db, startAt);
+    return;
+  }
   routeToMaster(audioEl, false);
   audioEl.currentTime = startAt || 0;
   audioEl.volume = dbToVol(db);
   audioEl.play();
 }
+
+installAudioShims();
+
+// computer pictures are decoded ahead of time: opening an app or a photo must never wait for a download
+[
+  'assets/img/room3/apps/cookies.jpg?v=1',
+  'assets/img/room3/apps/doc-notes.jpg?v=1',
+  'assets/img/room3/apps/doc-room-map.webp?v=1',
+  'assets/img/room3/apps/games-blocked.jpg?v=1',
+  'assets/img/room3/apps/photo-1.jpg?v=1',
+  'assets/img/room3/apps/photo-2.jpg?v=1',
+  'assets/img/room3/apps/photo-3.jpg?v=1',
+  'assets/img/room3/apps/photo-4.jpg?v=1',
+  'assets/img/room3/apps/study.jpg?v=1',
+  'assets/img/room3/apps/weather.jpg?v=1',
+  'assets/img/room3/computer-off-closeup.webp?v=1',
+  'assets/img/room3/computer-off-far.webp?v=1',
+  'assets/img/room3/computer-on-closeup.webp?v=1',
+  'assets/img/room3/computer-on-far.webp?v=1',
+  'assets/img/room3/desk.webp?v=1',
+  'assets/img/room3/icons-closeup.webp?v=1',
+  'assets/img/room3/internet-icon-closeup.webp?v=1',
+  'assets/img/room3/video-bg.webp?v=2',
+  'assets/img/room3/video-frame.webp?v=1',
+  'assets/img/room3/video-top-layer.webp?v=1',
+  'assets/img/room3/wall3.jpg?v=1',
+].forEach(src => { const im = new Image(); im.src = src; });
 
 const state = {
   hour: 12,
@@ -1044,8 +1239,7 @@ el('computer-video').addEventListener('ended', () => {
   el('computer-video').classList.add('computer-video-ended-hide');
   // watching the compass video to the end counts as finding the second hint
   if (!state.hintsFound.compass) {
-    state.hintsFound.compass = true;
-    updateHintsUI();
+    foundHint('compass');
     playSfx(el('audio-puzzlesolved'), -16);
     saveProgress();
   }
@@ -1126,13 +1320,27 @@ Object.keys(BOARD_STICKER_ZOOM).forEach(n => {
     // face for prayer — seeing it counts as finding the first of 3 hints,
     // but only once Nor has actually said the hints need finding
     if (n === '4' && state.carpetPlaced && !state.hintsFound.kibla) {
-      state.hintsFound.kibla = true;
-      updateHintsUI();
+      foundHint('kibla');
       playSfx(el('audio-puzzlesolved'), -16);
       saveProgress();
     }
   });
 });
+
+
+// a new hint: the hints window opens by itself, the slot is filled with its glow animation, then the
+// window closes again (the player can open it any time with the light-bulb button)
+let hintsAutoCloseTimer = null;
+function foundHint(key) {
+  state.hintsFound[key] = true;
+  el('hints-wrap').classList.remove('hidden');
+  const bar = el('hints-bar');
+  const wasOpen = !bar.classList.contains('hidden');
+  bar.classList.remove('hidden');
+  clearTimeout(hintsAutoCloseTimer);
+  setTimeout(() => updateHintsUI(), 350);
+  if (!wasOpen) hintsAutoCloseTimer = setTimeout(() => bar.classList.add('hidden'), 4500);
+}
 
 function updateHintsUI() {
   const kiblaSlot = el('hint-slot-kibla');

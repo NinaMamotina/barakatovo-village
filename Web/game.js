@@ -78,14 +78,176 @@ function ensureMasterBus() {
   if (masterCtx.state === 'suspended') masterCtx.resume();
   return masterCtx;
 }
+// ---------------------------------------------------------------------------
+// iPhone / Telegram fixes: iOS ignores <audio>.volume, starts <audio> late, clips the first
+// milliseconds and drops a second sound that starts while another one plays. So every short sound
+// is decoded once and played with the Web Audio API instead (exact volume, no delay, sounds can
+// overlap); the same element API (play / pause / currentTime / volume / ended ...) is kept, so the
+// rest of the game does not change. Only the long loops (nasheed, azan, bathroom ambience ...) stay
+// real <audio> elements, but they get their own gain node so their volume works too.
+const LONG_AUDIO_IDS = new Set(['audio-nasheed', 'audio-azan', 'audio-bathroom-amb', 'audio-drops', 'audio-faucet-sink', 'audio-towel']);
+const audioShims = new WeakMap();
+const audioBufferCache = new Map();
+const audioPreloadQueue = [];
+let audioPreloadRunning = false;
+
+function busTarget(bus) {
+  return bus === 'narrator' ? narratorBus : bus ? voiceBus : masterLimiter;
+}
+
+function loadAudioBuffer(src) {
+  if (!audioBufferCache.has(src)) {
+    const ctx = ensureMasterBus();
+    const p = fetch(src)
+      .then(r => r.arrayBuffer())
+      .then(buf => new Promise((res, rej) => ctx.decodeAudioData(buf, res, rej)));
+    audioBufferCache.set(src, p);
+    p.catch(() => audioBufferCache.delete(src));
+  }
+  return audioBufferCache.get(src);
+}
+
+// decode the sounds one after another in the background so the first taps never wait for a download
+function pumpAudioPreload() {
+  if (audioPreloadRunning) return;
+  audioPreloadRunning = true;
+  const next = () => {
+    const a = audioPreloadQueue.shift();
+    if (!a) { audioPreloadRunning = false; return; }
+    const st = audioShims.get(a);
+    loadAudioBuffer(st.src).then(b => { st.buffer = b; }).catch(() => {}).then(() => setTimeout(next, 30));
+  };
+  next();
+}
+
+function installAudioShim(a) {
+  const ctx = ensureMasterBus();
+  if (!ctx || audioShims.has(a)) return;
+  const st = {
+    src: new URL(a.getAttribute('src'), document.baseURI).href,
+    buffer: null, target: null, gain: ctx.createGain(),
+    loop: a.loop, source: null, active: new Set(), token: 0,
+    playing: false, ended: false, offset: 0, startedAt: 0, wantPlay: false,
+  };
+  audioShims.set(a, st);
+  a.preload = 'none';
+  a.removeAttribute('src');          // the browser's own audio element is not used for these
+  try { a.load(); } catch (e) {}
+
+  const stopSource = () => {
+    st.token++;
+    if (st.source) { try { st.source.stop(); } catch (e) {} st.source.disconnect(); st.source = null; }
+  };
+  const begin = (offset) => {
+    stopSource();
+    const c = ensureMasterBus();
+    const s = c.createBufferSource();
+    s.buffer = st.buffer;
+    s.loop = st.loop;
+    st.gain.disconnect();
+    st.gain.connect(st.target || masterLimiter);
+    s.connect(st.gain);
+    const token = ++st.token;
+    s.onended = () => {
+      if (token !== st.token) return;
+      st.playing = false; st.ended = !st.loop; st.offset = 0; st.source = null;
+      a.dispatchEvent(new Event('ended'));
+    };
+    const off = Math.min(Math.max(0, offset), Math.max(0, st.buffer.duration - 0.001));
+    s.start(0, off);
+    st.source = s; st.startedAt = c.currentTime; st.offset = off; st.playing = true; st.ended = false;
+    a.dispatchEvent(new Event('play'));
+    a.dispatchEvent(new Event('playing'));
+  };
+  st.begin = begin;
+
+  Object.defineProperties(a, {
+    paused: { configurable: true, get: () => !(st.playing || st.active.size > 0) },
+    ended: { configurable: true, get: () => st.ended },
+    duration: { configurable: true, get: () => (st.buffer ? st.buffer.duration : NaN) },
+    readyState: { configurable: true, get: () => (st.buffer ? 4 : 0) },
+    volume: { configurable: true, get: () => st.gain.gain.value, set: (v) => { st.gain.gain.value = Math.max(0, v); } },
+    loop: { configurable: true, get: () => st.loop, set: (v) => { st.loop = !!v; if (st.source) st.source.loop = st.loop; } },
+    currentTime: {
+      configurable: true,
+      get: () => {
+        if (!st.playing) return st.offset;
+        const t = st.offset + (ensureMasterBus().currentTime - st.startedAt);
+        return st.loop && st.buffer ? t % st.buffer.duration : Math.min(t, st.buffer ? st.buffer.duration : t);
+      },
+      set: (v) => {
+        st.offset = Math.max(0, v); st.ended = false;
+        if (st.playing) begin(st.offset);
+      },
+    },
+  });
+  a.play = () => {
+    ensureMasterBus();
+    if (st.playing) return Promise.resolve();
+    if (!st.buffer) {
+      st.wantPlay = true;
+      return loadAudioBuffer(st.src).then(b => {
+        st.buffer = b;
+        if (st.wantPlay) { st.wantPlay = false; begin(st.ended ? 0 : st.offset); }
+      });
+    }
+    begin(st.ended ? 0 : st.offset);
+    return Promise.resolve();
+  };
+  a.pause = () => {
+    st.wantPlay = false;
+    st.active.forEach(s => { try { s.stop(); } catch (e) {} });
+    st.active.clear();
+    if (!st.playing) return;
+    st.offset = a.currentTime;
+    stopSource();
+    st.playing = false;
+    a.dispatchEvent(new Event('pause'));
+  };
+  audioPreloadQueue.push(a);
+}
+
+// an independent one-shot (used by playSfx): several of them can sound at the same moment
+function playOneShot(a, db, startAt) {
+  const st = audioShims.get(a);
+  const c = ensureMasterBus();
+  const s = c.createBufferSource();
+  s.buffer = st.buffer;
+  const g = c.createGain();
+  g.gain.value = dbToVol(db);
+  s.connect(g);
+  g.connect(masterLimiter);
+  st.active.add(s);
+  s.onended = () => { st.active.delete(s); s.disconnect(); g.disconnect(); };
+  s.start(0, Math.min(startAt || 0, Math.max(0, st.buffer.duration - 0.001)));
+}
+
 function routeToMaster(audioEl, bus) {
   const ctx = ensureMasterBus();
   if (!ctx) return;
+  const shim = audioShims.get(audioEl);
+  if (shim) { shim.target = busTarget(bus); return; }
   if (routedNodes.has(audioEl)) return;
   const source = ctx.createMediaElementSource(audioEl);
-  const target = bus === 'narrator' ? narratorBus : bus ? voiceBus : masterLimiter;
-  source.connect(target);
+  const gain = ctx.createGain();
+  gain.gain.value = 1;
+  source.connect(gain);
+  gain.connect(busTarget(bus));
   routedNodes.set(audioEl, source);
+  // the <audio> element's own volume is ignored on iPhones: the gain node does the job
+  Object.defineProperty(audioEl, 'volume', {
+    configurable: true,
+    get: () => gain.gain.value,
+    set: (v) => { gain.gain.value = Math.max(0, v); },
+  });
+}
+
+function installAudioShims() {
+  if (!(window.AudioContext || window.webkitAudioContext)) return;
+  document.querySelectorAll('audio').forEach(a => {
+    if (!LONG_AUDIO_IDS.has(a.id) && a.getAttribute('src')) installAudioShim(a);
+  });
+  pumpAudioPreload();
 }
 
 // the computer's running hum loops while it is switched on and the player is
@@ -204,11 +366,19 @@ function playComputerClick() {
 }
 
 function playSfx(audioEl, db, startAt) {
+  const st = audioShims.get(audioEl);
+  if (st && st.buffer) {          // decoded: play it as its own overlapping one-shot, no delay
+    ensureMasterBus();
+    playOneShot(audioEl, db, startAt);
+    return;
+  }
   routeToMaster(audioEl, false);
   audioEl.currentTime = startAt || 0;
   audioEl.volume = dbToVol(db);
   audioEl.play();
 }
+
+installAudioShims();
 
 const state = {
   hour: 12,
@@ -233,6 +403,7 @@ const state = {
   searchOpened: false, // true once the internet icon has been clicked, showing the search bar
   compassHintGiven: false, // true once Nor has said she needs to look up how the compass works
   compassWallLines: { room: false, room2: false, room3: false }, // walls where Nor has already said where north is
+  carpetTurnLineDone: false, // true once Nor has said the carpet must be turned towards the computer
   compassIntroDone: false, // true once Nor has explained how to look for south after the compass first opens
   compassOpenLineDone: false, // true once Nor has said "now you can open the compass" after both hints were found
   inventory: [],
@@ -251,7 +422,7 @@ const SAVED_FIELDS = [
   'norGreeted', 'norSeenInBath', 'cardsSolved', 'norLeftBath',
   'norOutfitStage', 'readyForNamaz', 'inventory', 'norRoom4Shown',
   'carpetPlaced', 'carpetDir', 'hintsFound', 'computerOn', 'videoOpened', 'searchOpened',
-  'compassHintGiven', 'compassOpenLineDone', 'compassIntroDone', 'compassWallLines',
+  'compassHintGiven', 'compassOpenLineDone', 'compassIntroDone', 'compassWallLines', 'carpetTurnLineDone',
 ];
 
 function saveProgress() {
@@ -402,6 +573,7 @@ function showScreen(name) {
   el('compass-overlay').classList.toggle('compass-suspended', !['room', 'room2', 'room3', 'room4'].includes(name));
   if (['room', 'room2', 'room3', 'room4'].includes(name) && !el('compass-overlay').classList.contains('hidden')) setTimeout(onCompassWallArrival, 350);
   if (name === 'room4') setTimeout(maybePlayCompassOpenLine, 400);
+  if (name === 'room4') setTimeout(maybeSayCarpetTurnLine, 900);
   if (name === 'room4') setTimeout(maybePlayCompassIntro, 600);
 }
 
@@ -418,6 +590,32 @@ const COMPASS_BY_WALL = {
   room4: 'assets/img/room4/compass-room4.webp?v=2',
 };
 Object.values(COMPASS_BY_WALL).forEach(src => { new Image().src = src; });
+// computer pictures are decoded ahead of time: opening an app or a photo must never wait for a download
+[
+  'assets/img/room3/apps/cookies.jpg?v=1',
+  'assets/img/room3/apps/doc-notes.jpg?v=1',
+  'assets/img/room3/apps/doc-room-map.webp?v=1',
+  'assets/img/room3/apps/games-blocked.jpg?v=1',
+  'assets/img/room3/apps/photo-1.jpg?v=1',
+  'assets/img/room3/apps/photo-2.jpg?v=1',
+  'assets/img/room3/apps/photo-3.jpg?v=1',
+  'assets/img/room3/apps/photo-4.jpg?v=1',
+  'assets/img/room3/apps/study.jpg?v=1',
+  'assets/img/room3/apps/weather.jpg?v=1',
+  'assets/img/room3/computer-off-closeup.webp?v=1',
+  'assets/img/room3/computer-off-far.webp?v=1',
+  'assets/img/room3/computer-on-closeup.webp?v=1',
+  'assets/img/room3/computer-on-far.webp?v=1',
+  'assets/img/room3/desk.webp?v=1',
+  'assets/img/room3/icons-closeup.webp?v=1',
+  'assets/img/room3/internet-icon-closeup.webp?v=1',
+  'assets/img/room3/video-bg.webp?v=2',
+  'assets/img/room3/video-frame.webp?v=1',
+  'assets/img/room3/video-top-layer.webp?v=1',
+  'assets/img/room3/wall3.jpg?v=1',
+].forEach(src => { const im = new Image(); im.src = src; });
+
+
 // closeups and side rooms keep the compass of the wall they belong to, so
 // jumping straight into one (or leaving the bathroom) never shows a wrong needle
 const COMPASS_WALL_OF_SCREEN = {
@@ -571,8 +769,7 @@ function evaluateCompassAnswers() {
   if (ok) {
     showCompassBubble('Получилось! Теперь я знаю: компьютер — это юг!', 8000);
     if (!state.hintsFound.south) {
-      state.hintsFound.south = true;
-      updateHintsUI();
+      foundHint('south');
       playSfx(el('audio-puzzlesolved'), -16);
       saveProgress();
     }
@@ -694,6 +891,22 @@ function closeCompassOverlay() {
   cancelCompassDemo();
   el('compass-overlay').classList.add('hidden');
   updateNorFollow();
+  setTimeout(maybeSayCarpetTurnLine, 600);
+}
+
+// the compass has done its job: once it is put away Nor says the carpet must now be turned towards
+// the computer (that is the south). She says it where she stands, in the room with the door.
+function maybeSayCarpetTurnLine() {
+  if (!state.hintsFound.south || state.carpetTurnLineDone) return;
+  if (!el('compass-overlay').classList.contains('hidden')) return;
+  const active = document.querySelector('.screen.active');
+  if (!active || active.id !== 'scene-room4' || !state.norRoom4Shown) return;
+  if (!el('room4-dialogue').classList.contains('hidden')) { setTimeout(maybeSayCarpetTurnLine, 1000); return; }
+  state.carpetTurnLineDone = true;
+  saveProgress();
+  const text = 'Компьютер — это юг! Значит, коврик нужно повернуть в его сторону.';
+  playRoom4Dialogue(text, null, 7000);
+  lastRoom4Line = { text, audioId: null };
 }
 el('compass-overlay-img').addEventListener('click', () => {
   // the tap that picked the compass up also ends with a click — ignore it
@@ -1210,7 +1423,8 @@ function showComputerContent(item, parentItems) {
   }
 }
 el('computer-window-video').addEventListener('play', () => {
-  if (computerVideoDialogue) {
+  // only while the window with the video is really open
+  if (computerVideoDialogue && computerWindowOpen) {
     playRoom3Dialogue(computerVideoDialogue.text, computerVideoDialogue.audioId ? el(computerVideoDialogue.audioId) : null);
   }
 });
@@ -1257,6 +1471,7 @@ function closeComputerWindow() {
   el('computer-window-back').classList.add('hidden');
   el('computer-window-close').classList.add('hidden');
   el('computer-window-video').pause();
+  computerVideoDialogue = null;
   stopRoom3Dialogue();
   updateComputerFrameVisibility();
 }
@@ -1476,8 +1691,7 @@ el('computer-video').addEventListener('ended', () => {
   el('computer-video').classList.add('computer-video-ended-hide');
   // watching the compass video to the end counts as finding the second hint
   if (!state.hintsFound.compass) {
-    state.hintsFound.compass = true;
-    updateHintsUI();
+    foundHint('compass');
     playSfx(el('audio-puzzlesolved'), -16);
     saveProgress();
     playRoom3Dialogue('Ага, красная стрелка компаса — это север, запомним.', el('audio-nor31'));
@@ -1539,8 +1753,7 @@ document.querySelectorAll('[data-back-board]').forEach(btn =>
     showScreen('room4');
     if (kiblaHintPending) {
       kiblaHintPending = false;
-      state.hintsFound.kibla = true;
-      updateHintsUI();
+      foundHint('kibla');
       playSfx(el('audio-puzzlesolved'), -16);
       saveProgress();
     }
@@ -1602,6 +1815,21 @@ Object.keys(BOARD_STICKER_ZOOM).forEach(n => {
     }
   });
 });
+
+
+// a new hint: the hints window opens by itself, the slot is filled with its glow animation, then the
+// window closes again (the player can open it any time with the light-bulb button)
+let hintsAutoCloseTimer = null;
+function foundHint(key) {
+  state.hintsFound[key] = true;
+  el('hints-wrap').classList.remove('hidden');
+  const bar = el('hints-bar');
+  const wasOpen = !bar.classList.contains('hidden');
+  bar.classList.remove('hidden');
+  clearTimeout(hintsAutoCloseTimer);
+  setTimeout(() => updateHintsUI(), 350);
+  if (!wasOpen) hintsAutoCloseTimer = setTimeout(() => bar.classList.add('hidden'), 4500);
+}
 
 function updateHintsUI() {
   const kiblaSlot = el('hint-slot-kibla');
@@ -1886,14 +2114,14 @@ function setupInventoryDrag() {
   // valid target (right now: the right item dropped on Nor dresses her up)
   function flyBack() {
     // opening the compass is a good thing to do, not a rejected drop: skip the "back to inventory" bump
-    const opensCompass = ghost.dataset.item === 'compass' && state.compassOpenLineDone;
+    const opensCompass = ghost.dataset.item === 'compass' && state.compassOpenLineDone && !state.hintsFound.south;
     if (!opensCompass) playSfx(el('audio-backtoinv'), -6);
     el('inventory-wrap').style.pointerEvents = '';
     // tapping the compass in the inventory doesn't dress Nor or place
     // anything — it just makes her think out loud; this line is deliberately
     // NOT saved as lastRoom4Line, so tapping Nor keeps repeating whatever she
     // last actually said instead of getting stuck on this aside
-    if (ghost.dataset.item === 'compass' && state.compassOpenLineDone) {
+    if (ghost.dataset.item === 'compass' && state.compassOpenLineDone && !state.hintsFound.south) {
       // Nor has said the compass can be opened now: tapping it shows it
       openCompassOverlay();
     } else if (ghost.dataset.item === 'compass' && !state.hintsFound.compass) {
@@ -2650,6 +2878,7 @@ const PRAYER_PART_STARTS = [0, 7.27, 9.64, 12.0]; // seconds inside prayer-all.m
 const PRAYER_TOTAL_SECONDS = 19.85;
 const PRAYER_VOLUME_DB = -12; // the voice sits well under the usual level
 let prayerTimers = [];
+let nasheedPausedForPrayer = false;
 function prayerLater(fn, ms) { prayerTimers.push(setTimeout(fn, ms)); }
 function stopPrayerAudio() {
   const a = el('audio-prayer-all');
@@ -2670,6 +2899,12 @@ function startPrayer() {
     updateNorFollow();
     hideCompassBubble();
     stopRoom4Dialogue();
+    // the nasheed on the loop fades out for the prayer
+    const nash = el('audio-nasheed');
+    if (!nash.paused) {
+      nasheedPausedForPrayer = true;
+      fadeAudioVolume(nash, 0, 1500, () => nash.pause());
+    }
     showScreen('prayer');
     document.querySelectorAll('.prayer-frame').forEach(f => f.classList.remove('shown'));
     el('prayer-end').classList.remove('shown');
@@ -2694,6 +2929,15 @@ function startPrayer() {
   prayerLater(() => {
     el('prayer-end').classList.add('shown');
     playSfx(el('audio-puzzlesolved'), -16);
+    // the narrator says "Внимание": the nasheed returns with a long, deep fade-in
+    if (nasheedPausedForPrayer) {
+      nasheedPausedForPrayer = false;
+      const nash = el('audio-nasheed');
+      routeToMaster(nash, false);
+      nash.volume = 0;
+      nash.play();
+      fadeAudioVolume(nash, dbToVol(-16), 6000);
+    }
     // as "to be continued" appears, a voice reads the notice out (recording still to come)
     const warn = document.getElementById('audio-prayer-warning');
     if (warn) {
