@@ -2708,6 +2708,61 @@ function startPrayer() {
   }, t0 + total * 1000 + 800);
 }
 
+// ---------------- intro cutscene ----------------
+
+const INTRO_NARRATORS = {
+  1: 'audio-narrator-intro-1',
+  2: 'audio-narrator-intro-2',
+  3: 'audio-narrator-intro-3',
+  4: 'audio-narrator-intro-4',
+};
+const INTRO_DARKEN_MS = 500;
+
+let introTimeouts = [];
+
+function clearIntroTimeouts() {
+  introTimeouts.forEach(clearTimeout);
+  introTimeouts = [];
+}
+
+function stopIntroNarrators() {
+  Object.values(INTRO_NARRATORS).forEach(id => {
+    const a = el(id);
+    a.pause();
+    a.currentTime = 0;
+    a.onended = null;
+  });
+}
+
+function showIntroFrame(n) {
+  for (let i = 1; i <= 4; i++) {
+    el('intro-frame-' + i).classList.toggle('active', i === n);
+  }
+  el('intro-yes-btn').classList.toggle('hidden', n !== 4);
+}
+
+function playIntroNarrator(n) {
+  const audio = el(INTRO_NARRATORS[n]);
+  routeToMaster(audio, 'narrator');
+  audio.currentTime = 0;
+  audio.volume = dbToVol(-6);
+  audio.onended = () => {
+    if (n < 4) introDarkenTo(n + 1);
+  };
+  audio.play();
+}
+
+// card change = fade to black, swap the picture underneath, fade back up —
+// timed to start the moment the current line finishes narrating
+function introDarkenTo(n) {
+  el('intro-dim').classList.add('show-transition');
+  introTimeouts.push(setTimeout(() => {
+    showIntroFrame(n);
+    playIntroNarrator(n);
+    el('intro-dim').classList.remove('show-transition');
+  }, INTRO_DARKEN_MS));
+}
+
 function startIntro() {
   el('inventory-wrap').classList.add('hidden');
   showScreen('intro');
