@@ -615,16 +615,16 @@ const COMPASS_BY_WALL = {
 afterFirstPicture(() => Object.values(COMPASS_BY_WALL).forEach(src => { new Image().src = src; }));
 // computer pictures are decoded ahead of time: opening an app or a photo must never wait for a download
 afterFirstPicture(() => [
-  'assets/img/room3/apps/cookies.jpg?v=1',
-  'assets/img/room3/apps/doc-notes.jpg?v=1',
-  'assets/img/room3/apps/doc-room-map.webp?v=1',
-  'assets/img/room3/apps/games-blocked.jpg?v=1',
+  'assets/img/room3/apps/cookies.jpg?v=3',
+  'assets/img/room3/apps/doc-notes.jpg?v=3',
+  'assets/img/room3/apps/doc-room-map.webp?v=3',
+  'assets/img/room3/apps/games-blocked.jpg?v=3',
   'assets/img/room3/apps/photo-1.jpg?v=1',
   'assets/img/room3/apps/photo-2.jpg?v=1',
   'assets/img/room3/apps/photo-3.jpg?v=1',
   'assets/img/room3/apps/photo-4.jpg?v=1',
-  'assets/img/room3/apps/study.jpg?v=1',
-  'assets/img/room3/apps/weather.jpg?v=1',
+  'assets/img/room3/apps/study.jpg?v=3',
+  'assets/img/room3/apps/weather.jpg?v=3',
   'assets/img/room3/computer-off-closeup.webp?v=1',
   'assets/img/room3/computer-off-far.webp?v=1',
   'assets/img/room3/computer-on-closeup.webp?v=1',
@@ -1348,7 +1348,7 @@ el('hit-room4-to-room').addEventListener('click', () => {
 // everything besides the compass video that can be opened on the computer
 // screen — icons on the desktop, and the decoy search results
 const COMPUTER_APPS = {
-  study: { type: 'image', src: 'assets/img/room3/apps/study.jpg?v=1', line: 'الخمسة هي فخري، والأربعة هي دافعي.', audio: 'audio-nor19' },
+  study: { type: 'image', src: 'assets/img/room3/apps/study.jpg?v=3', line: 'الخمسة هي فخري، والأربعة هي دافعي.', audio: 'audio-nor19' },
   photos: { type: 'menu', items: [
     { label: 'صورة 1', src: 'assets/img/room3/apps/photo-1.jpg?v=1', line: 'هذه هي عائلتنا كلها. أتساءل كيف تمكّنا جميعًا من الظهور في صورة واحدة؟', audio: 'audio-nor12' },
     { label: 'صورة 2', src: 'assets/img/room3/apps/photo-2.jpg?v=1', line: 'أبي يعرف كيف يساعد أيضًا. لكن أمي تقول أحيانًا إن العمل يزداد بعد مساعدته!', audio: 'audio-nor13' },
@@ -1356,15 +1356,15 @@ const COMPUTER_APPS = {
     { label: 'صورة 4', src: 'assets/img/room3/apps/photo-4.jpg?v=1', line: 'أبي وياسين يبنيان بيتًا للعصافير. آمل ألا تكون العصافير صعبة الإرضاء!', audio: 'audio-nor15' },
   ] },
   documents: { type: 'menu', items: [
-    { label: 'ملاحظاتي', src: 'assets/img/room3/apps/doc-notes.jpg?v=1', line: 'نسيت بعض الأسئلة تمامًا. جيد أنني فكرت في كتابتها.', audio: 'audio-nor14' },
-    { label: 'غرفتي', src: 'assets/img/room3/apps/doc-room-map.webp?v=1', line: 'هذه غرفتي المفضلة، مخططها من الأعلى. تجادل أبي وأخي الأكبر ياسين طويلًا في مكان كل شيء، لكن أمي هي التي رتّبت كل شيء بنفسها.', audio: 'audio-nor21' },
+    { label: 'ملاحظاتي', src: 'assets/img/room3/apps/doc-notes.jpg?v=3', line: 'نسيت بعض الأسئلة تمامًا. جيد أنني فكرت في كتابتها.', audio: 'audio-nor14' },
+    { label: 'غرفتي', src: 'assets/img/room3/apps/doc-room-map.webp?v=3', line: 'هذه غرفتي المفضلة، مخططها من الأعلى. تجادل أبي وأخي الأكبر ياسين طويلًا في مكان كل شيء، لكن أمي هي التي رتّبت كل شيء بنفسها.', audio: 'audio-nor21' },
   ] },
 };
 const SEARCH_RESULT_APPS = {
   cats: { type: 'video', src: 'assets/video/cats.mp4?v=2', line: 'يا له من قط لطيف!', audio: 'audio-nor23' },
-  games: { type: 'image', src: 'assets/img/room3/apps/games-blocked.jpg?v=1', line: 'أبي وضع قواعد جديدة مرة أخرى، وأحيانًا يزعجني هذا قليلًا، لكنني أقبل ذلك من أجل الله. أعلم أنه يفعل ذلك من أجلي، لأكبر إنسانة صالحة.', audio: 'audio-nor20' },
-  weather: { type: 'image', src: 'assets/img/room3/apps/weather.jpg?v=1', line: 'المطر رحمة من الله.', audio: 'audio-nor22' },
-  cookies: { type: 'image', src: 'assets/img/room3/apps/cookies.jpg?v=1', line: 'ما شاء الله! وصفة بسكويت! الآن أريد بسكويتًا فورًا!', audio: 'audio-nor16' },
+  games: { type: 'image', src: 'assets/img/room3/apps/games-blocked.jpg?v=3', line: 'أبي وضع قواعد جديدة مرة أخرى، وأحيانًا يزعجني هذا قليلًا، لكنني أقبل ذلك من أجل الله. أعلم أنه يفعل ذلك من أجلي، لأكبر إنسانة صالحة.', audio: 'audio-nor20' },
+  weather: { type: 'image', src: 'assets/img/room3/apps/weather.jpg?v=3', line: 'المطر رحمة من الله.', audio: 'audio-nor22' },
+  cookies: { type: 'image', src: 'assets/img/room3/apps/cookies.jpg?v=3', line: 'ما شاء الله! وصفة بسكويت! الآن أريد بسكويتًا فورًا!', audio: 'audio-nor16' },
 };
 
 // true while the generic app window (photos/documents/decoy results) is
@@ -2027,7 +2027,7 @@ function openBooklet() {
   if (state.talking) return;
   if (activeDialogueStop) activeDialogueStop();
   playSfx(el('audio-tap'), -12);
-  el('sticker-lightbox-img').src = 'assets/img/room2/wudu-booklet.jpg?v=1';
+  el('sticker-lightbox-img').src = 'assets/img/room2/wudu-booklet.jpg?v=3';
   el('sticker-lightbox').classList.remove('hidden');
   const caption = el('sticker-lightbox-caption');
   caption.textContent = 'جيد أن أمي طبعت لي هذه الورقة. أحيانًا أنسى ترتيب الوضوء.';
