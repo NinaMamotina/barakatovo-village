@@ -119,16 +119,45 @@ function loadAudioBuffer(src) {
 }
 
 // decode the sounds one after another in the background so the first taps never wait for a download
+// three at a time, so a slow phone connection is used fully but never swamped
+let audioPreloadActive = 0;
 function pumpAudioPreload() {
   if (audioPreloadRunning) return;
   audioPreloadRunning = true;
   const next = () => {
     const a = audioPreloadQueue.shift();
-    if (!a) { audioPreloadRunning = false; return; }
+    if (!a) {
+      if (--audioPreloadActive === 0) { audioPreloadRunning = false; startLongPreload(); }
+      return;
+    }
     const st = audioShims.get(a);
-    loadAudioBuffer(st.src).then(b => { st.buffer = b; }).catch(() => {}).then(() => setTimeout(next, 30));
+    loadAudioBuffer(st.src).then(b => { st.buffer = b; }).catch(() => {}).then(() => setTimeout(next, 10));
+  };
+  audioPreloadActive = 3;
+  next(); next(); next();
+}
+
+// the big loops (nasheed, azan, bathroom, taps...) are downloaded one by one, and only once all the
+// short sounds are ready, so they never compete with the narrator and the first taps
+let longPreloadStarted = false;
+function startLongPreload() {
+  if (longPreloadStarted) return;
+  longPreloadStarted = true;
+  const order = ['audio-nasheed', 'audio-azan', 'audio-bathroom-amb', 'audio-faucet-sink', 'audio-drops', 'audio-towel'];
+  const next = () => {
+    const a = document.getElementById(order.shift());
+    if (!a) return;
+    let moved = false;
+    const go = () => { if (!moved) { moved = true; setTimeout(next, 200); } };
+    a.addEventListener('canplaythrough', go, { once: true });
+    a.addEventListener('error', go, { once: true });
+    setTimeout(go, 30000);
+    a.preload = 'auto';
+    try { a.load(); } catch (e) {}
   };
   next();
+  // the computer's hum is fetched last (it is only needed once the computer is switched on)
+  setTimeout(() => { fetch('assets/audio/computer-hum-loop.wav?v=2').catch(() => {}); }, 20000);
 }
 
 function installAudioShim(a) {
@@ -259,17 +288,14 @@ function installAudioShims() {
     if (!LONG_AUDIO_IDS.has(a.id) && a.getAttribute('src')) installAudioShim(a);
   });
   // the opening sounds (and the click sounds) are decoded first, so they are ready the moment "Играть" is pressed
-  const first = ['audio-tap', 'audio-move', 'audio-narrator-intro-1', 'audio-intro-village', 'audio-narrator-intro-2',
-    'audio-intro-family', 'audio-narrator-intro-3', 'audio-intro-sleep', 'audio-narrator-intro-4'];
+  const first = ['audio-narrator-intro-1', 'audio-tap', 'audio-narrator-intro-2', 'audio-narrator-intro-3', 'audio-narrator-intro-4',
+    'audio-intro-village', 'audio-intro-family', 'audio-intro-sleep', 'audio-move', 'audio-buttonclick', 'audio-nor1', 'audio-nor2',
+    'audio-narrator-clock', 'audio-clock-loop', 'audio-puzzlesolved', 'audio-door', 'audio-wardrobe', 'audio-backtoinv'];
   audioPreloadQueue.sort((a, b) => {
     const ia = first.indexOf(a.id), ib = first.indexOf(b.id);
     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
   });
-  afterFirstPicture(() => {
-    pumpAudioPreload();
-    // the long loops (nasheed, azan, bathroom ...) are fetched a little later still
-    setTimeout(() => LONG_AUDIO_IDS.forEach(id => { const a = document.getElementById(id); if (a) { a.preload = 'auto'; try { a.load(); } catch (e) {} } }), 3000);
-  });
+  afterFirstPicture(() => pumpAudioPreload());
 }
 
 // the computer's running hum loops while it is switched on and the player is
@@ -348,7 +374,7 @@ function startHum() {
   if (!humBuffer) {
     if (humBufferLoading) return;
     humBufferLoading = true;
-    fetch('assets/audio/computer-hum-loop.wav?v=1')
+    fetch('assets/audio/computer-hum-loop.wav?v=2')
       .then(r => r.arrayBuffer())
       .then(buf => new Promise((res, rej) => ctx.decodeAudioData(buf, res, rej)))
       .then(decoded => { humBuffer = decoded; humBufferLoading = false; updateComputerHum(); })
